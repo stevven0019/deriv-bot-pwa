@@ -1,12 +1,979 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Deriv Bot PWA</title>
-</head>
-<body>
-  <h1>Hola Esteban 👋</h1>
-  <p>Tu bot está listo para convertirse en app.</p>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Deriv Trading — Señales + Ejecución</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .grid {
+        display: grid;
+        gap: 1rem;
+      }
+      .g2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .g3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .badge {
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+      }
+      .buy {
+        background: #e7fff3;
+        color: #0a7a3c;
+      }
+      .sell {
+        background: #ffecec;
+        color: #a10000;
+      }
+      .neutral {
+        background: #eef2ff;
+        color: #253b8a;
+      }
+      .muted {
+        opacity: 0.7;
+      }
+      pre.log {
+        max-height: 280px;
+        overflow: auto;
+        background: #0b1021;
+        color: #d1d6ff;
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+      table {
+        font-size: 0.95rem;
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h2>Deriv Trading — Señales + Ejecución (MACD + RSI + Tendencia)</h2>
+      <p class="muted">
+        Velas en tiempo real, señales combinadas y ejecución CALL/PUT por
+        WebSocket Deriv.
+      </p>
+
+      <!-- Conexión y cuenta -->
+      <article>
+        <h4>Conexión y cuenta</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >App ID
+              <input id="app_id" type="text" value="1089" />
+            </label>
+            <small class="muted">Usa tu App ID para producción.</small>
+          </div>
+          <div>
+            <label
+              >Token (requerido para operar)
+              <input
+                id="token"
+                type="password"
+                placeholder="Pega tu token de Deriv"
+              />
+            </label>
+          </div>
+          <div>
+            <label>Estado</label>
+            <div id="auth_status" class="muted">No autorizado</div>
+            <div id="balance_info" class="muted">Balance: —</div>
+            <div id="account_type_info" class="muted">Tipo de cuenta: —</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Mercado -->
+      <article>
+        <h4>Mercado</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Símbolo (índices sintéticos)
+              <select id="symbol">
+                <option>R_10</option>
+                <option>R_25</option>
+                <option>R_50</option>
+                <option>R_75</option>
+                <option selected>R_100</option>
+                <option>R_10S</option>
+                <option>R_25S</option>
+                <option>R_50S</option>
+                <option>R_75S</option>
+                <option>R_100S</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label
+              >Timeframe (granularidad)
+              <select id="timeframe">
+                <option value="60" selected>M1</option>
+                <option value="300">M5</option>
+                <option value="900">M15</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label
+              >Velas históricas
+              <input
+                id="history"
+                type="number"
+                min="50"
+                max="1200"
+                value="300"
+              />
+            </label>
+          </div>
+        </div>
+        <div>
+          <button id="btn_start">Iniciar</button>
+          <button id="btn_stop" class="secondary">Detener</button>
+        </div>
+      </article>
+
+      <!-- Indicadores -->
+      <article>
+        <h4>Indicadores</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >RSI período
+              <input
+                id="rsi_period"
+                type="number"
+                min="2"
+                max="100"
+                value="14"
+              />
+            </label>
+          </div>
+          <div>
+            <label
+              >MACD rápida / lenta / señal
+              <div class="grid g3">
+                <input
+                  id="macd_fast"
+                  type="number"
+                  min="2"
+                  max="100"
+                  value="12"
+                />
+                <input
+                  id="macd_slow"
+                  type="number"
+                  min="3"
+                  max="150"
+                  value="26"
+                />
+                <input
+                  id="macd_signal"
+                  type="number"
+                  min="2"
+                  max="100"
+                  value="9"
+                />
+              </div>
+            </label>
+          </div>
+          <div>
+            <label
+              >EMA tendencia período
+              <input
+                id="trend_ema"
+                type="number"
+                min="2"
+                max="500"
+                value="200"
+              />
+            </label>
+          </div>
+        </div>
+        <div>
+          <button id="btn_force" class="contrast">Forzar señal ahora</button>
+        </div>
+      </article>
+
+      <!-- Panel de señales -->
+      <article>
+        <h4>Panel de señales</h4>
+        <div class="grid g3">
+          <div>
+            <strong>Último precio:</strong>
+            <div id="last_price">—</div>
+          </div>
+          <div>
+            <strong>RSI:</strong>
+            <div id="rsi_val">—</div>
+          </div>
+          <div>
+            <strong>MACD (línea / señal / hist):</strong>
+            <div id="macd_vals">—</div>
+          </div>
+        </div>
+        <div class="grid g2" style="margin-top: 0.75rem">
+          <div>
+            <strong>Tendencia EMA:</strong>
+            <div id="trend_dir">—</div>
+          </div>
+          <div>
+            <strong>Señal combinada:</strong>
+            <div id="signal_badge">
+              <span class="badge neutral">Neutral</span>
+            </div>
+          </div>
+        </div>
+        <details style="margin-top: 1rem">
+          <summary>Últimas 5 velas</summary>
+          <pre id="candles_preview"></pre>
+        </details>
+      </article>
+
+      <!-- Ejecución -->
+      <article>
+        <h4>Ejecución</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Monto (stake)
+              <input
+                id="amount"
+                type="number"
+                min="0.35"
+                step="0.01"
+                value="1"
+              />
+            </label>
+          </div>
+          <div>
+            <label
+              >Divisa
+              <select id="currency">
+                <option selected>USD</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label
+              >Duración / Unidad
+              <div class="grid g3">
+                <input id="duration" type="number" min="1" value="1" />
+                <select id="duration_unit">
+                  <option value="t">ticks</option>
+                  <option value="s">seg</option>
+                  <option value="m" selected>min</option>
+                </select>
+                <select id="contract_type">
+                  <option value="CALL">CALL (Rise)</option>
+                  <option value="PUT">PUT (Fall)</option>
+                </select>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="grid g3">
+          <button id="btn_call" class="primary">Comprar CALL</button>
+          <button id="btn_put" class="secondary">Comprar PUT</button>
+          <label
+            ><input type="checkbox" id="auto_trade" /> Auto ejecutar según
+            señal</label
+          >
+        </div>
+        <div class="grid g3">
+          <div>
+            <label
+              >Cooldown auto-trade (seg)
+              <input id="cooldown" type="number" min="0" value="60" />
+            </label>
+          </div>
+          <div>
+            <label
+              >Máx operaciones AutoTrade
+              <input id="max_auto_trades" type="number" min="1" value="10" />
+            </label>
+          </div>
+        </div>
+
+        <h5 style="margin-top: 1rem">Contratos abiertos</h5>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Símbolo</th>
+              <th>Entrada</th>
+              <th>Spot</th>
+              <th>P/L</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="contracts_tbl"></tbody>
+        </table>
+      </article>
+
+      <!-- Modo de operación -->
+      <article>
+        <h4>Modo de operación</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Modo
+              <select id="modo_trade">
+                <option value="normal" selected>Trading por señales</option>
+                <option value="scalping">Scalping dinámico</option>
+              </select>
+            </label>
+            <small class="muted"
+              >El modo scalping cierra contratos según TP/SL/tiempo y cambio de
+              tendencia.</small
+            >
+          </div>
+          <div>
+            <strong>Modo actual:</strong>
+            <div id="modo_activo">Trading por señales</div>
+          </div>
+        </div>
+
+        <h5 style="margin-top: 0.75rem">Parámetros de scalping</h5>
+        <div class="grid g3">
+          <div>
+            <label
+              >TP dinámico desde
+              <input id="scalp_tp" type="number" step="0.01" value="0.25" />
+            </label>
+          </div>
+          <div>
+            <label
+              >Stop Loss
+              <input id="scalp_sl" type="number" step="0.01" value="-0.20" />
+            </label>
+          </div>
+          <div>
+            <label
+              >Ventana cierre anticipado
+              <div class="grid g3">
+                <input id="scalp_exit_from" type="number" min="1" value="40" />
+                <input id="scalp_exit_to" type="number" min="1" value="30" />
+                <span style="align-self: center">seg</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </article>
+
+      <!-- Estadísticas y Logs -->
+      <article>
+        <h4>Estadísticas de señales</h4>
+        <div id="signal_stats" class="muted">—</div>
+      </article>
+
+      <article>
+        <h4>Logs</h4>
+        <pre id="logs" class="log"></pre>
+      </article>
+    </main>
+
+    <script>
+      // ===== Utilidades de log =====
+      const logEl = document.getElementById("logs");
+      function log(msg) {
+        const ts = new Date().toISOString().replace("T", " ").replace("Z", "");
+        logEl.textContent += `[${ts}] ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // ===== Indicadores =====
+      function ema(arr, period) {
+        if (arr.length === 0) return [];
+        const k = 2 / (period + 1);
+        const out = [];
+        let emaPrev = arr[0];
+        for (let i = 0; i < arr.length; i++) {
+          if (i === 0) out.push(emaPrev);
+          else {
+            emaPrev = arr[i] * k + emaPrev * (1 - k);
+            out.push(emaPrev);
+          }
+        }
+        return out;
+      }
+
+      function rsi(values, period = 14) {
+        if (values.length < period + 1) return Array(values.length).fill(NaN);
+        const deltas = [];
+        for (let i = 1; i < values.length; i++)
+          deltas.push(values[i] - values[i - 1]);
+        let gain = 0,
+          loss = 0;
+        for (let i = 0; i < period; i++) {
+          const d = deltas[i];
+          if (d >= 0) gain += d;
+          else loss -= d;
+        }
+        gain /= period;
+        loss /= period;
+        const rsis = Array(period).fill(NaN);
+        for (let i = period; i < deltas.length; i++) {
+          const d = deltas[i],
+            up = d > 0 ? d : 0,
+            down = d < 0 ? -d : 0;
+          gain = (gain * (period - 1) + up) / period;
+          loss = (loss * (period - 1) + down) / period;
+          const rs = loss === 0 ? Infinity : gain / loss;
+          rsis.push(100 - 100 / (1 + rs));
+        }
+        while (rsis.length < values.length) rsis.push(rsis.at(-1) ?? NaN);
+        return rsis;
+      }
+
+      function macd(values, fast = 12, slow = 26, signalPeriod = 9) {
+        if (values.length < Math.max(fast, slow) + signalPeriod) {
+          const n = values.length;
+          return {
+            macdLine: Array(n).fill(NaN),
+            signal: Array(n).fill(NaN),
+            hist: Array(n).fill(NaN),
+          };
+        }
+        const emaFast = ema(values, fast),
+          emaSlow = ema(values, slow);
+        const macdLine = values.map((_, i) => emaFast[i] - emaSlow[i]);
+        const signal = ema(macdLine, signalPeriod);
+        const hist = macdLine.map((v, i) => v - signal[i]);
+        return { macdLine, signal, hist };
+      }
+
+      // ===== Estado UI =====
+      const elAppId = document.getElementById("app_id");
+      const elToken = document.getElementById("token");
+      const elAuthStatus = document.getElementById("auth_status");
+      const elBalanceInfo = document.getElementById("balance_info");
+
+      const elSymbol = document.getElementById("symbol");
+      const elTf = document.getElementById("timeframe");
+      const elHistory = document.getElementById("history");
+
+      const elRsiP = document.getElementById("rsi_period");
+      const elMacdF = document.getElementById("macd_fast");
+      const elMacdS = document.getElementById("macd_slow");
+      const elMacdSig = document.getElementById("macd_signal");
+      const elTrend = document.getElementById("trend_ema");
+
+      const elLast = document.getElementById("last_price");
+      const elRsiVal = document.getElementById("rsi_val");
+      const elMacdVals = document.getElementById("macd_vals");
+      const elTrendDir = document.getElementById("trend_dir");
+      const elSignal = document.getElementById("signal_badge");
+      const elPreview = document.getElementById("candles_preview");
+
+      const elAmount = document.getElementById("amount");
+      const elCurrency = document.getElementById("currency");
+      const elDuration = document.getElementById("duration");
+      const elDurUnit = document.getElementById("duration_unit");
+      const elCtype = document.getElementById("contract_type");
+      const elAuto = document.getElementById("auto_trade");
+      const elCooldown = document.getElementById("cooldown");
+
+      const tblContracts = document.getElementById("contracts_tbl");
+
+      const btnStart = document.getElementById("btn_start");
+      const btnStop = document.getElementById("btn_stop");
+      const btnForce = document.getElementById("btn_force");
+      const btnCall = document.getElementById("btn_call");
+      const btnPut = document.getElementById("btn_put");
+
+      // ===== WebSocket =====
+      let ws = null;
+      let candles = [];
+      let subscription_id = null;
+      let authorized = false;
+      let loginid = null;
+      let lastAutoTradeTs = 0;
+      const contracts = new Map(); // id -> { row, lastUpdate }
+
+      function setText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      }
+
+      function updateAuthUI() {
+        const label = authorized
+          ? `Autorizado (${loginid || "—"})`
+          : "No autorizado";
+        setText("auth_status", label);
+      }
+
+      function stopWS() {
+        if (ws) {
+          log("Cerrando WebSocket…");
+          try {
+            ws.close();
+          } catch {}
+        }
+        ws = null;
+        subscription_id = null;
+        candles = [];
+      }
+
+      function startWS() {
+        stopWS();
+        const appId = elAppId?.value?.trim() || "1089";
+        const url = `wss://ws.derivws.com/websockets/v3?app_id=${encodeURIComponent(
+          appId
+        )}`;
+        ws = new WebSocket(url);
+
+        ws.onopen = () => {
+          log("WebSocket conectado.");
+
+          const token = elToken?.value?.trim() || "";
+          if (!token) {
+            authorized = false;
+            loginid = null;
+            updateAuthUI();
+            log("Token vacío. No se puede autorizar.");
+          } else {
+            ws.send(JSON.stringify({ authorize: token }));
+            log("Enviando authorize…");
+          }
+
+          const symbol = elSymbol?.value || "R_100";
+          const gran = parseInt(elTf?.value || "60", 10);
+          const count = Math.max(
+            50,
+            Math.min(1200, parseInt(elHistory?.value || "300", 10))
+          );
+
+          const req = {
+            ticks_history: symbol,
+            style: "candles",
+            granularity: gran,
+            end: "latest",
+            count,
+            subscribe: 1,
+            adjust_start_time: 1,
+          };
+          ws.send(JSON.stringify(req));
+          log(`Suscribiendo velas: ${symbol} @ ${gran}s (${count})`);
+        };
+
+        ws.onmessage = (evt) => {
+          try {
+            handleMessage(JSON.parse(evt.data));
+          } catch (e) {
+            log("Excepción en onmessage: " + (e?.message || e));
+          }
+        };
+
+        ws.onclose = () => {
+          log("WebSocket cerrado.");
+        };
+        ws.onerror = () => log("WebSocket error.");
+      }
+
+      function handleMessage(data) {
+        if (data.error) {
+          log("Error: " + (data.error.message || JSON.stringify(data.error)));
+          return;
+        }
+
+        switch (data.msg_type) {
+          case "authorize": {
+            authorized = true;
+            loginid = data.authorize?.loginid || null;
+            updateAuthUI();
+            log(`Autorizado como ${loginid}`);
+
+            const accountType = data.authorize?.account_type || "—";
+            setText(
+              "account_type_info",
+              `Tipo de cuenta: ${accountType === "virtual" ? "Demo" : "Real"}`
+            );
+
+            ws.send(
+              JSON.stringify({ balance: 1, account: "current", subscribe: 1 })
+            );
+            break;
+          }
+
+          case "balance": {
+            const b = data.balance;
+            setText(
+              "balance_info",
+              `Balance: ${b.currency} ${Number(b.balance).toFixed(2)}`
+            );
+            break;
+          }
+
+          case "candles": {
+            if (data.subscription) subscription_id = data.subscription.id;
+            if (Array.isArray(data.candles)) {
+              candles = data.candles.map((k) => ({
+                epoch: k.epoch,
+                open: +k.open,
+                high: +k.high,
+                low: +k.low,
+                close: +k.close,
+              }));
+              refreshPreview();
+              computeSignal(true);
+            }
+            break;
+          }
+
+          case "ohlc": {
+            const k = data.ohlc;
+            if (!k) break;
+            const item = {
+              epoch: k.epoch,
+              open: +k.open,
+              high: +k.high,
+              low: +k.low,
+              close: +k.close,
+            };
+            const idx = candles.findIndex((c) => c.epoch === k.epoch);
+            if (idx >= 0) candles[idx] = item;
+            else candles.push(item);
+            const max = Math.max(
+              50,
+              Math.min(1200, parseInt(elHistory?.value || "300", 10))
+            );
+            if (candles.length > max) candles = candles.slice(-max);
+            refreshPreview();
+            computeSignal(true);
+            break;
+          }
+
+          case "proposal": {
+            const p = data.proposal;
+            const price = Number(elAmount?.value || p.ask_price);
+            if (!isFinite(price) || price <= 0) {
+              log("Monto inválido. No se puede ejecutar la compra.");
+              return;
+            }
+            ws.send(JSON.stringify({ buy: p.id, price }));
+            log(`Enviando BUY con proposal_id=${p.id} y price=${price}`);
+            break;
+          }
+
+          case "buy": {
+            const buy = data.buy;
+            log(
+              `Compra OK: contract_id=${buy.contract_id}, trans=${buy.transaction_id}`
+            );
+            ws.send(
+              JSON.stringify({
+                proposal_open_contract: 1,
+                contract_id: buy.contract_id,
+                subscribe: 1,
+              })
+            );
+            ensureContractRow(
+              buy.contract_id,
+              buy.longcode || data.longcode,
+              buy.buy_price,
+              buy.contract_type
+            );
+            break;
+          }
+
+          case "proposal_open_contract": {
+            const poc = data.proposal_open_contract;
+            updateContractRow(poc);
+            if (poc.is_sold || poc.status === "won" || poc.status === "lost") {
+              try {
+                updateSignalResult(poc.status);
+              } catch {}
+              log(`Contrato cerrado: ${poc.status} | P/L: ${poc.profit}`);
+              try {
+                log(getSignalStats());
+              } catch {}
+            }
+            break;
+          }
+
+          default: {
+            log(`Mensaje no manejado: ${data.msg_type}`);
+            break;
+          }
+        }
+      }
+
+      // ===== Señales =====
+      const signalHistory = [];
+      let autoTradeCount = 0;
+
+      function computeSignal(triggerAuto = false) {
+        if (!Array.isArray(candles) || candles.length < 50) {
+          setSignalUI("Neutral");
+          return { side: "Neutral" };
+        }
+
+        const closes = candles.map((c) => c.close);
+        const lastClose = closes.at(-1);
+
+        // Indicadores con valores por defecto seguros
+        const rsiP = +elRsiP?.value || 14;
+        const rsiArr = rsi(closes, rsiP);
+        const rsiLast = rsiArr.at(-1) ?? 50;
+
+        const mf = +elMacdF?.value || 12;
+        const ms = +elMacdS?.value || 26;
+        const mSig = +elMacdSig?.value || 9;
+        const { macdLine, signal, hist } = macd(closes, mf, ms, mSig);
+        const macdLast = macdLine.at(-1) ?? 0;
+        const macdSigLast = signal.at(-1) ?? 0;
+        const histLast = hist.at(-1) ?? 0;
+
+        const trP = +elTrend?.value || 200;
+        const emaTrendArr = ema(closes, trP);
+        const emaTrend = emaTrendArr.at(-1) ?? lastClose;
+        const trendUp = lastClose > emaTrend;
+        const trendLabel = trendUp ? "Alcista" : "Bajista";
+
+        const buyCond = histLast > 0 && rsiLast > 50 && trendUp;
+        const sellCond = histLast < 0 && rsiLast < 50 && !trendUp;
+
+        let side = "Neutral";
+        if (buyCond) side = "Compra";
+        else if (sellCond) side = "Venta";
+
+        // UI indicadores (protegido)
+        if (elLast)
+          elLast.textContent = isFinite(lastClose) ? lastClose.toFixed(5) : "—";
+        if (elRsiVal)
+          elRsiVal.textContent = isFinite(rsiLast) ? rsiLast.toFixed(2) : "—";
+        if (elMacdVals)
+          elMacdVals.textContent = [macdLast, macdSigLast, histLast]
+            .map((v) => (isFinite(v) ? v.toFixed(5) : "—"))
+            .join("  |  ");
+        if (elTrendDir)
+          elTrendDir.textContent = `${trendLabel} (EMA${trP}=${
+            isFinite(emaTrend) ? emaTrend.toFixed(5) : "—"
+          })`;
+        setSignalUI(side);
+
+        // Guardar señal
+        const symbol = elSymbol?.value || "R_100";
+        const signalObj = {
+          timestamp: Date.now(),
+          symbol,
+          side,
+          rsi: rsiLast,
+          macd_hist: histLast,
+          trend: trendLabel,
+          result: null,
+        };
+        signalHistory.push(signalObj);
+
+        // Auto-trade
+        if (triggerAuto && elAuto?.checked && authorized) {
+          const now = Math.floor(Date.now() / 1000);
+          const cd = Math.max(0, +elCooldown?.value || 0);
+          const maxOps =
+            parseInt(document.getElementById("max_auto_trades")?.value, 10) ||
+            10;
+
+          if (
+            now - lastAutoTradeTs >= cd &&
+            (side === "Compra" || side === "Venta") &&
+            autoTradeCount < maxOps
+          ) {
+            const type = side === "Compra" ? "CALL" : "PUT";
+            placeOrder(type);
+            lastAutoTradeTs = now;
+            autoTradeCount++;
+            log(`AutoTrade ejecutado #${autoTradeCount} (${type})`);
+          }
+        }
+
+        return signalObj;
+      }
+
+      function setSignalUI(side) {
+        const badge = document.createElement("span");
+        badge.className =
+          "badge " +
+          (side === "Compra" ? "buy" : side === "Venta" ? "sell" : "neutral");
+        badge.textContent = side;
+        elSignal.innerHTML = "";
+        elSignal.appendChild(badge);
+      }
+
+      function refreshPreview() {
+        const last5 = candles.slice(-5).map((c) => ({
+          t: new Date(c.epoch * 1000)
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "),
+          o: c.open,
+          h: c.high,
+          l: c.low,
+          c: c.close,
+        }));
+        elPreview.textContent = JSON.stringify(last5, null, 2);
+      }
+
+      function updateSignalResult(status) {
+        const lastSignal = signalHistory.at(-1);
+        if (lastSignal && (status === "won" || status === "lost")) {
+          lastSignal.result = status === "won" ? "acierto" : "fallo";
+          const statsEl = document.getElementById("signal_stats");
+          if (statsEl) statsEl.textContent = getSignalStats();
+        }
+      }
+
+      function getSignalStats() {
+        const total = signalHistory.filter((s) => s.result).length;
+        const aciertos = signalHistory.filter(
+          (s) => s.result === "acierto"
+        ).length;
+        const fallos = signalHistory.filter((s) => s.result === "fallo").length;
+        const winRate = total > 0 ? ((aciertos / total) * 100).toFixed(2) : "—";
+        const lossRate = total > 0 ? ((fallos / total) * 100).toFixed(2) : "—";
+        return `Señales: ${total} | ✅ Aciertos: ${aciertos} (${winRate}%) | ❌ Fallos: ${fallos} (${lossRate}%)`;
+      }
+
+      // ===== Órdenes =====
+      let lastOrderIntent = null;
+
+      function placeOrder(contract_type) {
+        if (!ws || ws.readyState !== 1) {
+          log("WS no conectado.");
+          return;
+        }
+        if (!authorized) {
+          log("No autorizado. Provee token para operar.");
+          return;
+        }
+
+        const symbol = (elSymbol?.value || "").trim();
+        const amount = Number(elAmount?.value);
+        const currency = (elCurrency?.value || "USD").trim();
+        const duration = Number(elDuration?.value);
+        const duration_unit = (elDurUnit?.value || "m").trim();
+
+        if (!symbol) {
+          log("Símbolo inválido.");
+          return;
+        }
+        if (!isFinite(amount) || amount <= 0) {
+          log("Monto inválido. Corrige el stake.");
+          return;
+        }
+        if (!isFinite(duration) || duration <= 0) {
+          log("Duración inválida.");
+          return;
+        }
+
+        const proposalReq = {
+          proposal: 1,
+          amount,
+          basis: "stake",
+          contract_type,
+          currency,
+          duration,
+          duration_unit,
+          symbol,
+        };
+
+        lastOrderIntent = {
+          ts: Date.now(),
+          symbol,
+          amount,
+          currency,
+          duration,
+          duration_unit,
+          contract_type,
+        };
+
+        ws.send(JSON.stringify(proposalReq));
+        log(
+          `Solicitando propuesta ${contract_type} ${symbol} dur=${duration}${duration_unit} stake=${amount} ${currency}`
+        );
+      }
+
+      function ensureContractRow(
+        contract_id,
+        longcode,
+        buy_price,
+        contract_type
+      ) {
+        if (contracts.has(contract_id)) return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="nowrap">${contract_id}</td>
+          <td>${contract_type || "—"}</td>
+          <td>${elSymbol.value}</td>
+          <td>—</td><td>—</td><td>—</td><td>Pendiente</td>
+        `;
+        tblContracts.prepend(tr);
+        contracts.set(contract_id, { row: tr, longcode, buy_price });
+      }
+
+      function updateContractRow(poc) {
+        const id = poc.contract_id;
+        if (!contracts.has(id))
+          ensureContractRow(id, poc.longcode, poc.buy_price, poc.contract_type);
+        const rec = contracts.get(id);
+        const row = rec.row;
+        const tds = row.children;
+
+        const entry = poc.entry_spot ?? poc.entry_tick ?? "—";
+        const spot = poc.current_spot ?? poc.current_tick ?? "—";
+        const pl = isFinite(poc.profit) ? Number(poc.profit).toFixed(2) : "—";
+        const status = poc.is_sold
+          ? poc.status || "Cerrado"
+          : poc.is_expired
+          ? "Expirado"
+          : "Abierto";
+
+        tds[3].textContent = isFinite(entry) ? Number(entry).toFixed(5) : entry;
+        tds[4].textContent = isFinite(spot) ? Number(spot).toFixed(5) : spot;
+        tds[5].textContent = pl;
+        tds[6].textContent = status;
+
+        if (poc.is_sold) {
+          const won = poc.status === "won";
+          row.style.background = won ? "#e9fff2" : "#ffefef";
+        }
+      }
+
+      // ===== Eventos UI =====
+      btnStart.addEventListener("click", startWS);
+      btnStop.addEventListener("click", stopWS);
+      btnForce.addEventListener("click", () => computeSignal(false));
+      btnCall.addEventListener("click", () => placeOrder("CALL"));
+      btnPut.addEventListener("click", () => placeOrder("PUT"));
+
+      elSymbol.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+      elTf.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+      elHistory.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+
+      log(
+        "1) Pega tu token (demo recomendado) y App ID. 2) Inicia mercado. 3) Ajusta indicadores. 4) Opera con CALL/PUT o activa Auto-trade."
+      );
+    </script>
+  </body>
 </html>
-Crear index.html inicial
