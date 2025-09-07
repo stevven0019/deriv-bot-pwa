@@ -67,26 +67,20 @@
         WebSocket Deriv.
       </p>
 
-      <!-- Conexión y cuenta -->
       <article>
         <h4>Conexión y cuenta</h4>
         <div class="grid g3">
           <div>
-            <label
-              >App ID
-              <input id="app_id" type="text" value="1089" />
-            </label>
+            <label>App ID<input id="app_id" type="text" value="1089" /></label>
             <small class="muted">Usa tu App ID para producción.</small>
           </div>
           <div>
             <label
-              >Token (requerido para operar)
-              <input
+              >Token (requerido para operar)<input
                 id="token"
                 type="password"
                 placeholder="Pega tu token de Deriv"
-              />
-            </label>
+            /></label>
           </div>
           <div>
             <label>Estado</label>
@@ -97,14 +91,12 @@
         </div>
       </article>
 
-      <!-- Mercado -->
       <article>
         <h4>Mercado</h4>
         <div class="grid g3">
           <div>
             <label
-              >Símbolo (índices sintéticos)
-              <select id="symbol">
+              >Símbolo (índices sintéticos)<select id="symbol">
                 <option>R_10</option>
                 <option>R_25</option>
                 <option>R_50</option>
@@ -115,30 +107,34 @@
                 <option>R_50S</option>
                 <option>R_75S</option>
                 <option>R_100S</option>
-              </select>
-            </label>
+                <optgroup label="Forex">
+                  <option>frxEURUSD</option>
+                  <option>frxGBPUSD</option>
+                  <option>frxUSDJPY</option>
+                  <option>frxAUDUSD</option>
+                  <option>frxEURJPY</option>
+                </optgroup>
+              </select></label
+            >
           </div>
           <div>
             <label
-              >Timeframe (granularidad)
-              <select id="timeframe">
+              >Timeframe (granularidad)<select id="timeframe">
                 <option value="60" selected>M1</option>
                 <option value="300">M5</option>
                 <option value="900">M15</option>
-              </select>
-            </label>
+              </select></label
+            >
           </div>
           <div>
             <label
-              >Velas históricas
-              <input
+              >Velas históricas<input
                 id="history"
                 type="number"
                 min="50"
                 max="1200"
                 value="300"
-              />
-            </label>
+            /></label>
           </div>
         </div>
         <div>
@@ -147,21 +143,18 @@
         </div>
       </article>
 
-      <!-- Indicadores -->
       <article>
         <h4>Indicadores</h4>
         <div class="grid g3">
           <div>
             <label
-              >RSI período
-              <input
+              >RSI período<input
                 id="rsi_period"
                 type="number"
                 min="2"
                 max="100"
                 value="14"
-              />
-            </label>
+            /></label>
           </div>
           <div>
             <label
@@ -187,21 +180,18 @@
                   min="2"
                   max="100"
                   value="9"
-                />
-              </div>
-            </label>
+                /></div
+            ></label>
           </div>
           <div>
             <label
-              >EMA tendencia período
-              <input
+              >EMA tendencia período<input
                 id="trend_ema"
                 type="number"
                 min="2"
                 max="500"
                 value="200"
-              />
-            </label>
+            /></label>
           </div>
         </div>
         <div>
@@ -209,7 +199,6 @@
         </div>
       </article>
 
-      <!-- Panel de señales -->
       <article>
         <h4>Panel de señales</h4>
         <div class="grid g3">
@@ -244,35 +233,31 @@
         </details>
       </article>
 
-      <!-- Ejecución -->
       <article>
         <h4>Ejecución</h4>
         <div class="grid g3">
           <div>
             <label
-              >Monto (stake)
-              <input
+              >Monto (stake)<input
                 id="amount"
                 type="number"
                 min="0.35"
                 step="0.01"
                 value="1"
-              />
-            </label>
+            /></label>
           </div>
           <div>
             <label
-              >Divisa
-              <select id="currency">
+              >Divisa<select id="currency">
                 <option selected>USD</option>
-              </select>
-            </label>
+              </select></label
+            >
           </div>
           <div>
             <label
               >Duración / Unidad
               <div class="grid g3">
-                <input id="duration" type="number" min="1" value="1" />
+                <input id="duration" type="number" min="1" value="3" />
                 <select id="duration_unit">
                   <option value="t">ticks</option>
                   <option value="s">seg</option>
@@ -282,8 +267,8 @@
                   <option value="CALL">CALL (Rise)</option>
                   <option value="PUT">PUT (Fall)</option>
                 </select>
-              </div>
-            </label>
+              </div></label
+            >
           </div>
         </div>
         <div class="grid g3">
@@ -297,18 +282,84 @@
         <div class="grid g3">
           <div>
             <label
-              >Cooldown auto-trade (seg)
-              <input id="cooldown" type="number" min="0" value="60" />
-            </label>
+              >Cooldown auto-trade (seg)<input
+                id="cooldown"
+                type="number"
+                min="0"
+                value="60"
+            /></label>
           </div>
           <div>
             <label
-              >Máx operaciones AutoTrade
-              <input id="max_auto_trades" type="number" min="1" value="10" />
-            </label>
+              >Máx operaciones AutoTrade<input
+                id="max_auto_trades"
+                type="number"
+                min="1"
+                value="10"
+            /></label>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <h4>Modo de operación y Scalping</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Modo<select id="modo_trade">
+                <option value="normal" selected>Trading por señales</option>
+                <option value="scalping">Scalping dinámico</option>
+              </select></label
+            >
+            <small class="muted"
+              >El modo scalping cierra contratos según TP/SL/tiempo y cambio de
+              tendencia.</small
+            >
+          </div>
+          <div>
+            <strong>Modo actual:</strong>
+            <div id="modo_activo">Trading por señales</div>
+          </div>
+          <div>
+            <label>Control manual</label>
+            <button id="btn_sell_manual" class="danger">Vender Manual</button>
           </div>
         </div>
 
+        <h5 style="margin-top: 0.75rem">Parámetros de scalping</h5>
+        <div class="grid g3">
+          <div>
+            <label
+              >TP dinámico desde<input
+                id="scalp_tp"
+                type="number"
+                step="0.01"
+                value="0.25"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Stop Loss<input
+                id="scalp_sl"
+                type="number"
+                step="0.01"
+                value="-0.20"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Ventana cierre anticipado
+              <div class="grid g3">
+                <input id="scalp_exit_from" type="number" min="1" value="40" />
+                <input id="scalp_exit_to" type="number" min="1" value="30" />
+                <span style="align-self: center">seg</span>
+              </div></label
+            >
+          </div>
+        </div>
+      </article>
+
+      <article>
         <h5 style="margin-top: 1rem">Contratos abiertos</h5>
         <table>
           <thead>
@@ -326,57 +377,6 @@
         </table>
       </article>
 
-      <!-- Modo de operación -->
-      <article>
-        <h4>Modo de operación</h4>
-        <div class="grid g3">
-          <div>
-            <label
-              >Modo
-              <select id="modo_trade">
-                <option value="normal" selected>Trading por señales</option>
-                <option value="scalping">Scalping dinámico</option>
-              </select>
-            </label>
-            <small class="muted"
-              >El modo scalping cierra contratos según TP/SL/tiempo y cambio de
-              tendencia.</small
-            >
-          </div>
-          <div>
-            <strong>Modo actual:</strong>
-            <div id="modo_activo">Trading por señales</div>
-          </div>
-        </div>
-
-        <h5 style="margin-top: 0.75rem">Parámetros de scalping</h5>
-        <div class="grid g3">
-          <div>
-            <label
-              >TP dinámico desde
-              <input id="scalp_tp" type="number" step="0.01" value="0.25" />
-            </label>
-          </div>
-          <div>
-            <label
-              >Stop Loss
-              <input id="scalp_sl" type="number" step="0.01" value="-0.20" />
-            </label>
-          </div>
-          <div>
-            <label
-              >Ventana cierre anticipado
-              <div class="grid g3">
-                <input id="scalp_exit_from" type="number" min="1" value="40" />
-                <input id="scalp_exit_to" type="number" min="1" value="30" />
-                <span style="align-self: center">seg</span>
-              </div>
-            </label>
-          </div>
-        </div>
-      </article>
-
-      <!-- Estadísticas y Logs -->
       <article>
         <h4>Estadísticas de señales</h4>
         <div id="signal_stats" class="muted">—</div>
@@ -389,7 +389,7 @@
     </main>
 
     <script>
-      // ===== Utilidades de log =====
+      // === Utilidades de Log ===
       const logEl = document.getElementById("logs");
       function log(msg) {
         const ts = new Date().toISOString().replace("T", " ").replace("Z", "");
@@ -397,7 +397,7 @@
         logEl.scrollTop = logEl.scrollHeight;
       }
 
-      // ===== Indicadores =====
+      // === Indicadores ===
       function ema(arr, period) {
         if (arr.length === 0) return [];
         const k = 2 / (period + 1);
@@ -458,29 +458,32 @@
         return { macdLine, signal, hist };
       }
 
-      // ===== Estado UI =====
+      // === Estado y elementos UI ===
+      let ws = null;
+      let candles = [];
+      let subscription_id = null;
+      let authorized = false;
+      let loginid = null;
+      let lastAutoTradeTs = 0;
+      const contracts = new Map();
       const elAppId = document.getElementById("app_id");
       const elToken = document.getElementById("token");
       const elAuthStatus = document.getElementById("auth_status");
       const elBalanceInfo = document.getElementById("balance_info");
-
       const elSymbol = document.getElementById("symbol");
       const elTf = document.getElementById("timeframe");
       const elHistory = document.getElementById("history");
-
       const elRsiP = document.getElementById("rsi_period");
       const elMacdF = document.getElementById("macd_fast");
       const elMacdS = document.getElementById("macd_slow");
       const elMacdSig = document.getElementById("macd_signal");
       const elTrend = document.getElementById("trend_ema");
-
       const elLast = document.getElementById("last_price");
       const elRsiVal = document.getElementById("rsi_val");
       const elMacdVals = document.getElementById("macd_vals");
       const elTrendDir = document.getElementById("trend_dir");
       const elSignal = document.getElementById("signal_badge");
       const elPreview = document.getElementById("candles_preview");
-
       const elAmount = document.getElementById("amount");
       const elCurrency = document.getElementById("currency");
       const elDuration = document.getElementById("duration");
@@ -488,24 +491,26 @@
       const elCtype = document.getElementById("contract_type");
       const elAuto = document.getElementById("auto_trade");
       const elCooldown = document.getElementById("cooldown");
-
       const tblContracts = document.getElementById("contracts_tbl");
-
       const btnStart = document.getElementById("btn_start");
       const btnStop = document.getElementById("btn_stop");
       const btnForce = document.getElementById("btn_force");
       const btnCall = document.getElementById("btn_call");
       const btnPut = document.getElementById("btn_put");
+      const elModoTrade = document.getElementById("modo_trade");
+      const elModoActivo = document.getElementById("modo_activo");
+      const elScalpTP = document.getElementById("scalp_tp");
+      const elScalpSL = document.getElementById("scalp_sl");
+      const elScalpExitFrom = document.getElementById("scalp_exit_from");
+      const elScalpExitTo = document.getElementById("scalp_exit_to");
+      const btnSellManual = document.getElementById("btn_sell_manual");
 
-      // ===== WebSocket =====
-      let ws = null;
-      let candles = [];
-      let subscription_id = null;
-      let authorized = false;
-      let loginid = null;
-      let lastAutoTradeTs = 0;
-      const contracts = new Map(); // id -> { row, lastUpdate }
+      // Estado y historial para scalping dinámico
+      const scalpingState = new Map();
+      const signalHistory = [];
+      let autoTradeCount = 0;
 
+      // === Funciones principales del Bot ===
       function setText(id, text) {
         const el = document.getElementById(id);
         if (el) el.textContent = text;
@@ -528,6 +533,9 @@
         ws = null;
         subscription_id = null;
         candles = [];
+        authorized = false;
+        loginid = null;
+        updateAuthUI();
       }
 
       function startWS() {
@@ -537,39 +545,18 @@
           appId
         )}`;
         ws = new WebSocket(url);
+        log("WebSocket conectando...");
 
         ws.onopen = () => {
           log("WebSocket conectado.");
-
-          const token = elToken?.value?.trim() || "";
+          const token = elToken?.value?.trim();
           if (!token) {
-            authorized = false;
-            loginid = null;
-            updateAuthUI();
             log("Token vacío. No se puede autorizar.");
+            stopWS();
           } else {
             ws.send(JSON.stringify({ authorize: token }));
-            log("Enviando authorize…");
+            log("Enviando authorize...");
           }
-
-          const symbol = elSymbol?.value || "R_100";
-          const gran = parseInt(elTf?.value || "60", 10);
-          const count = Math.max(
-            50,
-            Math.min(1200, parseInt(elHistory?.value || "300", 10))
-          );
-
-          const req = {
-            ticks_history: symbol,
-            style: "candles",
-            granularity: gran,
-            end: "latest",
-            count,
-            subscribe: 1,
-            adjust_start_time: 1,
-          };
-          ws.send(JSON.stringify(req));
-          log(`Suscribiendo velas: ${symbol} @ ${gran}s (${count})`);
         };
 
         ws.onmessage = (evt) => {
@@ -580,9 +567,7 @@
           }
         };
 
-        ws.onclose = () => {
-          log("WebSocket cerrado.");
-        };
+        ws.onclose = () => log("WebSocket cerrado.");
         ws.onerror = () => log("WebSocket error.");
       }
 
@@ -598,7 +583,6 @@
             loginid = data.authorize?.loginid || null;
             updateAuthUI();
             log(`Autorizado como ${loginid}`);
-
             const accountType = data.authorize?.account_type || "—";
             setText(
               "account_type_info",
@@ -608,6 +592,8 @@
             ws.send(
               JSON.stringify({ balance: 1, account: "current", subscribe: 1 })
             );
+
+            subscribeCandles();
             break;
           }
 
@@ -685,7 +671,7 @@
             );
             ensureContractRow(
               buy.contract_id,
-              buy.longcode || data.longcode,
+              buy.longcode,
               buy.buy_price,
               buy.contract_type
             );
@@ -696,14 +682,11 @@
             const poc = data.proposal_open_contract;
             updateContractRow(poc);
             if (poc.is_sold || poc.status === "won" || poc.status === "lost") {
-              try {
-                updateSignalResult(poc.status);
-              } catch {}
+              updateSignalResult(poc.status);
               log(`Contrato cerrado: ${poc.status} | P/L: ${poc.profit}`);
-              try {
-                log(getSignalStats());
-              } catch {}
+              log(getSignalStats());
             }
+            manageScalping(poc);
             break;
           }
 
@@ -714,10 +697,27 @@
         }
       }
 
-      // ===== Señales =====
-      const signalHistory = [];
-      let autoTradeCount = 0;
+      function subscribeCandles() {
+        const symbol = elSymbol?.value || "R_100";
+        const gran = parseInt(elTf?.value || "60", 10);
+        const count = Math.max(
+          50,
+          Math.min(1200, parseInt(elHistory?.value || "300", 10))
+        );
+        const req = {
+          ticks_history: symbol,
+          style: "candles",
+          granularity: gran,
+          end: "latest",
+          count,
+          subscribe: 1,
+          adjust_start_time: 1,
+        };
+        ws.send(JSON.stringify(req));
+        log(`Suscribiendo velas: ${symbol} @ ${gran}s (${count})`);
+      }
 
+      // === Lógica de señales y scalping ===
       function computeSignal(triggerAuto = false) {
         if (!Array.isArray(candles) || candles.length < 50) {
           setSignalUI("Neutral");
@@ -726,12 +726,9 @@
 
         const closes = candles.map((c) => c.close);
         const lastClose = closes.at(-1);
-
-        // Indicadores con valores por defecto seguros
         const rsiP = +elRsiP?.value || 14;
         const rsiArr = rsi(closes, rsiP);
         const rsiLast = rsiArr.at(-1) ?? 50;
-
         const mf = +elMacdF?.value || 12;
         const ms = +elMacdS?.value || 26;
         const mSig = +elMacdSig?.value || 9;
@@ -739,21 +736,17 @@
         const macdLast = macdLine.at(-1) ?? 0;
         const macdSigLast = signal.at(-1) ?? 0;
         const histLast = hist.at(-1) ?? 0;
-
         const trP = +elTrend?.value || 200;
         const emaTrendArr = ema(closes, trP);
         const emaTrend = emaTrendArr.at(-1) ?? lastClose;
         const trendUp = lastClose > emaTrend;
         const trendLabel = trendUp ? "Alcista" : "Bajista";
-
         const buyCond = histLast > 0 && rsiLast > 50 && trendUp;
         const sellCond = histLast < 0 && rsiLast < 50 && !trendUp;
-
         let side = "Neutral";
         if (buyCond) side = "Compra";
         else if (sellCond) side = "Venta";
 
-        // UI indicadores (protegido)
         if (elLast)
           elLast.textContent = isFinite(lastClose) ? lastClose.toFixed(5) : "—";
         if (elRsiVal)
@@ -761,18 +754,16 @@
         if (elMacdVals)
           elMacdVals.textContent = [macdLast, macdSigLast, histLast]
             .map((v) => (isFinite(v) ? v.toFixed(5) : "—"))
-            .join("  |  ");
+            .join(" | ");
         if (elTrendDir)
           elTrendDir.textContent = `${trendLabel} (EMA${trP}=${
             isFinite(emaTrend) ? emaTrend.toFixed(5) : "—"
           })`;
         setSignalUI(side);
 
-        // Guardar señal
-        const symbol = elSymbol?.value || "R_100";
         const signalObj = {
           timestamp: Date.now(),
-          symbol,
+          symbol: elSymbol?.value || "R_100",
           side,
           rsi: rsiLast,
           macd_hist: histLast,
@@ -781,14 +772,13 @@
         };
         signalHistory.push(signalObj);
 
-        // Auto-trade
-        if (triggerAuto && elAuto?.checked && authorized) {
+        const modo = elModoTrade.value;
+        if (triggerAuto && elAuto?.checked && authorized && modo === "normal") {
           const now = Math.floor(Date.now() / 1000);
           const cd = Math.max(0, +elCooldown?.value || 0);
           const maxOps =
             parseInt(document.getElementById("max_auto_trades")?.value, 10) ||
             10;
-
           if (
             now - lastAutoTradeTs >= cd &&
             (side === "Compra" || side === "Venta") &&
@@ -801,8 +791,6 @@
             log(`AutoTrade ejecutado #${autoTradeCount} (${type})`);
           }
         }
-
-        return signalObj;
       }
 
       function setSignalUI(side) {
@@ -849,9 +837,7 @@
         return `Señales: ${total} | ✅ Aciertos: ${aciertos} (${winRate}%) | ❌ Fallos: ${fallos} (${lossRate}%)`;
       }
 
-      // ===== Órdenes =====
-      let lastOrderIntent = null;
-
+      // === Órdenes y gestión de contratos ===
       function placeOrder(contract_type) {
         if (!ws || ws.readyState !== 1) {
           log("WS no conectado.");
@@ -861,26 +847,21 @@
           log("No autorizado. Provee token para operar.");
           return;
         }
-
         const symbol = (elSymbol?.value || "").trim();
         const amount = Number(elAmount?.value);
         const currency = (elCurrency?.value || "USD").trim();
         const duration = Number(elDuration?.value);
         const duration_unit = (elDurUnit?.value || "m").trim();
-
-        if (!symbol) {
-          log("Símbolo inválido.");
+        if (
+          !symbol ||
+          !isFinite(amount) ||
+          amount <= 0 ||
+          !isFinite(duration) ||
+          duration <= 0
+        ) {
+          log("Parámetros de orden inválidos.");
           return;
         }
-        if (!isFinite(amount) || amount <= 0) {
-          log("Monto inválido. Corrige el stake.");
-          return;
-        }
-        if (!isFinite(duration) || duration <= 0) {
-          log("Duración inválida.");
-          return;
-        }
-
         const proposalReq = {
           proposal: 1,
           amount,
@@ -891,17 +872,6 @@
           duration_unit,
           symbol,
         };
-
-        lastOrderIntent = {
-          ts: Date.now(),
-          symbol,
-          amount,
-          currency,
-          duration,
-          duration_unit,
-          contract_type,
-        };
-
         ws.send(JSON.stringify(proposalReq));
         log(
           `Solicitando propuesta ${contract_type} ${symbol} dur=${duration}${duration_unit} stake=${amount} ${currency}`
@@ -916,12 +886,11 @@
       ) {
         if (contracts.has(contract_id)) return;
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="nowrap">${contract_id}</td>
-          <td>${contract_type || "—"}</td>
-          <td>${elSymbol.value}</td>
-          <td>—</td><td>—</td><td>—</td><td>Pendiente</td>
-        `;
+        tr.innerHTML = `<td class="nowrap">${contract_id}</td><td>${
+          contract_type || "—"
+        }</td><td>${
+          elSymbol.value
+        }</td><td>—</td><td>—</td><td>—</td><td>Pendiente</td>`;
         tblContracts.prepend(tr);
         contracts.set(contract_id, { row: tr, longcode, buy_price });
       }
@@ -933,7 +902,6 @@
         const rec = contracts.get(id);
         const row = rec.row;
         const tds = row.children;
-
         const entry = poc.entry_spot ?? poc.entry_tick ?? "—";
         const spot = poc.current_spot ?? poc.current_tick ?? "—";
         const pl = isFinite(poc.profit) ? Number(poc.profit).toFixed(2) : "—";
@@ -942,24 +910,121 @@
           : poc.is_expired
           ? "Expirado"
           : "Abierto";
-
         tds[3].textContent = isFinite(entry) ? Number(entry).toFixed(5) : entry;
         tds[4].textContent = isFinite(spot) ? Number(spot).toFixed(5) : spot;
         tds[5].textContent = pl;
         tds[6].textContent = status;
-
         if (poc.is_sold) {
           const won = poc.status === "won";
           row.style.background = won ? "#e9fff2" : "#ffefef";
         }
       }
 
-      // ===== Eventos UI =====
+      function sellContract(id, reason = "") {
+        if (!ws || scalpingState.get(id)?.sellRequested) return;
+        ws.send(JSON.stringify({ sell: id, price: 0 }));
+        scalpingState.set(id, { sellRequested: true });
+        log(`Sell enviado (${reason}) contract_id=${id}`);
+      }
+
+      function sellManual() {
+        const openContracts = Array.from(contracts.keys()).filter((id) => {
+          const row = contracts.get(id).row;
+          return row && row.children[6].textContent === "Abierto";
+        });
+        if (openContracts.length === 0) {
+          log("No hay contratos abiertos para vender.");
+          return;
+        }
+        const contractToSell = openContracts[0];
+        sellContract(contractToSell, "Venta manual");
+      }
+
+      function manageScalping(poc) {
+        if (elModoTrade?.value !== "scalping" || poc.is_sold) return;
+        const tp = Number(elScalpTP?.value ?? 0.25);
+        const sl = Number(elScalpSL?.value ?? -0.2);
+        const from = Number(elScalpExitFrom?.value ?? 40);
+        const to = Number(elScalpExitTo?.value ?? 30);
+        const profit = Number(poc.profit ?? 0);
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = (poc.date_expiry || 0) - now;
+
+        if (poc.is_sold || poc.is_expired) {
+          scalpingState.delete(poc.contract_id);
+          return;
+        }
+
+        const st = scalpingState.get(poc.contract_id) || {
+          tpArmed: false,
+          trendAtArm: null,
+          tpArmedProfit: null,
+          highestProfit: profit,
+        };
+
+        if (!st.hasOwnProperty("start_time")) {
+          st.start_time = poc.date_start;
+        }
+
+        // === Periodo de gracia inicial (5 segundos) ===
+        // No se ejecuta ninguna lógica de scalping en los primeros segundos
+        if (now - st.start_time < 5) {
+          scalpingState.set(poc.contract_id, st);
+          return;
+        }
+
+        st.highestProfit = Math.max(st.highestProfit, profit);
+
+        const closes = candles.map((c) => c.close);
+        const emaTrend = ema(closes, 200).at(-1);
+        const trendNow = closes.at(-1) > emaTrend;
+
+        // 1. Vender si alcanza el stop loss
+        if (profit <= sl) {
+          return sellContract(poc.contract_id, `SL ${sl}`);
+        }
+
+        // 2. Activar el take profit dinámico y trailing stop
+        if (!st.tpArmed && profit >= tp) {
+          st.tpArmed = true;
+          st.trendAtArm = trendNow;
+          st.tpArmedProfit = profit;
+          scalpingState.set(poc.contract_id, st);
+          log(`TP de scalping armado para ${poc.contract_id}.`);
+          return;
+        }
+
+        // 3. Vender si el beneficio retrocede desde su punto más alto (Trailing Stop Loss)
+        if (st.tpArmed && profit < st.highestProfit - 0.1) {
+          return sellContract(
+            poc.contract_id,
+            "Retroceso de precio significativo"
+          );
+        }
+
+        // 4. Vender si la tendencia cambia
+        if (st.tpArmed && trendNow !== st.trendAtArm) {
+          return sellContract(poc.contract_id, "Cambio de tendencia");
+        }
+
+        // 5. Cierre anticipado por tiempo (si el beneficio es positivo)
+        if (remaining <= from && remaining >= to && profit > 0) {
+          return sellContract(
+            poc.contract_id,
+            `Cierre anticipado (${from}-${to}s)`
+          );
+        }
+
+        scalpingState.set(poc.contract_id, st);
+      }
+
+      // === Eventos UI y inicialización ===
       btnStart.addEventListener("click", startWS);
       btnStop.addEventListener("click", stopWS);
       btnForce.addEventListener("click", () => computeSignal(false));
       btnCall.addEventListener("click", () => placeOrder("CALL"));
       btnPut.addEventListener("click", () => placeOrder("PUT"));
+      btnSellManual.addEventListener("click", sellManual);
 
       elSymbol.addEventListener("change", () => {
         if (ws) startWS();
@@ -971,9 +1036,16 @@
         if (ws) startWS();
       });
 
-      log(
-        "1) Pega tu token (demo recomendado) y App ID. 2) Inicia mercado. 3) Ajusta indicadores. 4) Opera con CALL/PUT o activa Auto-trade."
-      );
+      elModoTrade.addEventListener("change", () => {
+        const modo = elModoTrade?.value || "normal";
+        elModoActivo.textContent =
+          modo === "scalping" ? "Scalping dinámico" : "Trading por señales";
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        log("1) Pega tu token. 2) Inicia el bot.");
+        log("3) Ajusta la estrategia. 4) Activa el modo automático.");
+      });
     </script>
   </body>
 </html>
