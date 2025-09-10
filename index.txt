@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Deriv Trading — Señales + Ejecución</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .grid {
+        display: grid;
+        gap: 1rem;
+      }
+      .g2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .g3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .badge {
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+      }
+      .buy {
+        background: #e7fff3;
+        color: #0a7a3c;
+      }
+      .sell {
+        background: #ffecec;
+        color: #a10000;
+      }
+      .neutral {
+        background: #eef2ff;
+        color: #253b8a;
+      }
+      .muted {
+        opacity: 0.7;
+      }
+      pre.log {
+        max-height: 280px;
+        overflow: auto;
+        background: #0b1021;
+        color: #d1d6ff;
+        border-radius: 0.5rem;
+        padding: 1rem;
+      }
+      table {
+        font-size: 0.95rem;
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h2>Deriv Trading — Señales + Ejecución</h2>
+      <p class="muted">
+        Velas en tiempo real, señales combinadas y ejecución de contratos.
+      </p>
+
+      <article>
+        <h4>Conexión y cuenta</h4>
+        <div class="grid g3">
+          <div>
+            <label>App ID<input id="app_id" type="text" value="1089" /></label>
+            <small class="muted">Usa tu App ID para producción.</small>
+          </div>
+          <div>
+            <label
+              >Token (requerido para operar)<input
+                id="token"
+                type="password"
+                placeholder="Pega tu token de Deriv"
+            /></label>
+          </div>
+          <div>
+            <label>Estado</label>
+            <div id="auth_status" class="muted">No autorizado</div>
+            <div id="balance_info" class="muted">Balance: —</div>
+            <div id="account_type_info" class="muted">Tipo de cuenta: —</div>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <h4>Mercado</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Símbolo (índices sintéticos)<select id="symbol">
+                <option>R_10</option>
+                <option>R_25</option>
+                <option>R_50</option>
+                <option>R_75</option>
+                <option selected>R_100</option>
+                <option>R_10S</option>
+                <option>R_25S</option>
+                <option>R_50S</option>
+                <option>R_75S</option>
+                <option>R_100S</option>
+                <optgroup label="Forex">
+                  <option>frxEURUSD</option>
+                  <option>frxGBPUSD</option>
+                  <option>frxUSDJPY</option>
+                  <option>frxAUDUSD</option>
+                  <option>frxEURJPY</option>
+                </optgroup>
+              </select></label
+            >
+          </div>
+          <div>
+            <label
+              >Timeframe (granularidad)<select id="timeframe">
+                <option value="60" selected>M1</option>
+                <option value="300">M5</option>
+                <option value="900">M15</option>
+              </select></label
+            >
+          </div>
+          <div>
+            <label
+              >Velas históricas<input
+                id="history"
+                type="number"
+                min="50"
+                max="1200"
+                value="300"
+            /></label>
+          </div>
+        </div>
+        <div>
+          <button id="btn_start">Iniciar</button>
+          <button id="btn_stop" class="secondary">Detener</button>
+        </div>
+      </article>
+
+      <article>
+        <h4>Indicadores</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >RSI período<input
+                id="rsi_period"
+                type="number"
+                min="2"
+                max="100"
+                value="14"
+            /></label>
+          </div>
+          <div>
+            <label
+              >MACD rápida / lenta / señal
+              <div class="grid g3">
+                <input
+                  id="macd_fast"
+                  type="number"
+                  min="2"
+                  max="100"
+                  value="12"
+                />
+                <input
+                  id="macd_slow"
+                  type="number"
+                  min="3"
+                  max="150"
+                  value="26"
+                />
+                <input
+                  id="macd_signal"
+                  type="number"
+                  min="2"
+                  max="100"
+                  value="9"
+                />
+              </div>
+            </label>
+          </div>
+          <div>
+            <label
+              >EMA tendencia período<input
+                id="trend_ema"
+                type="number"
+                min="2"
+                max="500"
+                value="200"
+            /></label>
+          </div>
+          <div>
+            <label
+              >EMA Cruce (rápida / lenta)
+              <div class="grid g2">
+                <input id="ema_cross_fast" type="number" min="2" value="12" />
+                <input id="ema_cross_slow" type="number" min="3" value="26" />
+              </div>
+            </label>
+          </div>
+        </div>
+        <div>
+          <button id="btn_force" class="contrast">Forzar señal ahora</button>
+        </div>
+      </article>
+
+      <article>
+        <h4>Panel de señales</h4>
+        <div class="grid g3">
+          <div>
+            <strong>Último precio:</strong>
+            <div id="last_price">—</div>
+          </div>
+          <div>
+            <strong>RSI:</strong>
+            <div id="rsi_val">—</div>
+          </div>
+          <div>
+            <strong>MACD (línea / señal / hist):</strong>
+            <div id="macd_vals">—</div>
+          </div>
+        </div>
+        <div class="grid g3" style="margin-top: 0.75rem">
+          <div>
+            <strong>EMA Cruce (rápida / lenta):</strong>
+            <div id="ema_cross_vals">—</div>
+          </div>
+          <div>
+            <strong>Tendencia EMA:</strong>
+            <div id="trend_dir">—</div>
+          </div>
+          <div>
+            <strong>Señal combinada:</strong>
+            <div id="signal_badge">
+              <span class="badge neutral">Neutral</span>
+            </div>
+          </div>
+        </div>
+        <details style="margin-top: 1rem">
+          <summary>Últimas 5 velas</summary>
+          <pre id="candles_preview"></pre>
+        </details>
+      </article>
+
+      <article>
+        <h4>Ejecución</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Monto (stake)<input
+                id="amount"
+                type="number"
+                min="0.35"
+                step="0.01"
+                value="1"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Divisa<select id="currency">
+                <option selected>USD</option>
+              </select></label
+            >
+          </div>
+          <div>
+            <label
+              >Duración / Unidad
+              <div class="grid g3">
+                <input id="duration" type="number" min="1" value="3" />
+                <select id="duration_unit">
+                  <option value="t">ticks</option>
+                  <option value="s">seg</option>
+                  <option value="m" selected>min</option>
+                </select>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid g3">
+          <div>
+            <label>Tipo de Contrato</label>
+            <select id="strategy_type">
+              <option value="rise_fall" selected>Rise/Fall</option>
+              <option value="over_under_digit">
+                Over/Under (Último Dígito)
+              </option>
+            </select>
+          </div>
+          <div id="over_under_params" class="hidden">
+            <label>Barrera (Dígito 0-9)</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              max="9"
+              id="digit_barrier"
+              placeholder="Dígito para Over/Under"
+            />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="grid g2">
+              <button id="btn_buy_rise_over" class="primary">
+                Comprar Rise
+              </button>
+              <button id="btn_buy_fall_under" class="secondary">
+                Comprar Fall
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g3" style="margin-top: 1rem">
+          <label
+            ><input type="checkbox" id="auto_trade" /> Auto ejecutar según
+            señal</label
+          >
+          <div>
+            <label
+              >Cooldown auto-trade (seg)<input
+                id="cooldown"
+                type="number"
+                min="0"
+                value="60"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Máx operaciones AutoTrade<input
+                id="max_auto_trades"
+                type="number"
+                min="1"
+                value="10"
+            /></label>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <h4>Modo de operación y Scalping</h4>
+        <div class="grid g3">
+          <div>
+            <label
+              >Modo<select id="modo_trade">
+                <option value="normal" selected>Trading por señales</option>
+                <option value="scalping">Scalping dinámico</option>
+              </select></label
+            >
+            <small class="muted"
+              >El modo scalping cierra contratos según TP/SL/tiempo y cambio de
+              tendencia.</small
+            >
+          </div>
+          <div>
+            <strong>Modo actual:</strong>
+            <div id="modo_activo">Trading por señales</div>
+          </div>
+          <div>
+            <label>Control manual</label>
+            <button id="btn_sell_manual" class="danger">Vender Manual</button>
+          </div>
+        </div>
+
+        <h5 style="margin-top: 0.75rem">Parámetros de scalping</h5>
+        <div class="grid g3">
+          <div>
+            <label
+              >TP dinámico desde<input
+                id="scalp_tp"
+                type="number"
+                step="0.01"
+                value="0.25"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Stop Loss<input
+                id="scalp_sl"
+                type="number"
+                step="0.01"
+                value="-0.20"
+            /></label>
+          </div>
+          <div>
+            <label
+              >Ventana cierre anticipado
+              <div class="grid g3">
+                <input id="scalp_exit_from" type="number" min="1" value="40" />
+                <input id="scalp_exit_to" type="number" min="1" value="30" />
+                <span style="align-self: center">seg</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </article>
+
+      <article>
+        <h5 style="margin-top: 1rem">Contratos abiertos</h5>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Símbolo</th>
+              <th>Entrada</th>
+              <th>Spot</th>
+              <th>P/L</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="contracts_tbl"></tbody>
+        </table>
+      </article>
+
+      <article>
+        <h4>Estadísticas de señales</h4>
+        <div id="signal_stats" class="muted">—</div>
+      </article>
+
+      <article>
+        <h4>Logs</h4>
+        <pre id="logs" class="log"></pre>
+      </article>
+    </main>
+
+    <script>
+      // === Utilidades de Log ===
+      const logEl = document.getElementById("logs");
+      function log(msg) {
+        const ts = new Date().toISOString().replace("T", " ").replace("Z", "");
+        logEl.textContent += `[${ts}] ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      // === Indicadores ===
+      function ema(arr, period) {
+        if (arr.length === 0) return [];
+        const k = 2 / (period + 1);
+        const out = [];
+        let emaPrev = arr[0];
+        for (let i = 0; i < arr.length; i++) {
+          if (i === 0) out.push(emaPrev);
+          else {
+            emaPrev = arr[i] * k + emaPrev * (1 - k);
+            out.push(emaPrev);
+          }
+        }
+        return out;
+      }
+
+      function rsi(values, period = 14) {
+        if (values.length < period + 1) return Array(values.length).fill(NaN);
+        const deltas = [];
+        for (let i = 1; i < values.length; i++)
+          deltas.push(values[i] - values[i - 1]);
+        let gain = 0,
+          loss = 0;
+        for (let i = 0; i < period; i++) {
+          const d = deltas[i];
+          if (d >= 0) gain += d;
+          else loss -= d;
+        }
+        gain /= period;
+        loss /= period;
+        const rsis = Array(period).fill(NaN);
+        for (let i = period; i < deltas.length; i++) {
+          const d = deltas[i],
+            up = d > 0 ? d : 0,
+            down = d < 0 ? -d : 0;
+          gain = (gain * (period - 1) + up) / period;
+          loss = (loss * (period - 1) + down) / period;
+          const rs = loss === 0 ? Infinity : gain / loss;
+          rsis.push(100 - 100 / (1 + rs));
+        }
+        while (rsis.length < values.length) rsis.push(rsis.at(-1) ?? NaN);
+        return rsis;
+      }
+
+      function macd(values, fast = 12, slow = 26, signalPeriod = 9) {
+        if (values.length < Math.max(fast, slow) + signalPeriod) {
+          const n = values.length;
+          return {
+            macdLine: Array(n).fill(NaN),
+            signal: Array(n).fill(NaN),
+            hist: Array(n).fill(NaN),
+          };
+        }
+        const emaFast = ema(values, fast),
+          emaSlow = ema(values, slow);
+        const macdLine = values.map((_, i) => emaFast[i] - emaSlow[i]);
+        const signal = ema(macdLine, signalPeriod);
+        const hist = macdLine.map((v, i) => v - signal[i]);
+        return { macdLine, signal, hist };
+      }
+
+      // === Estado y elementos UI ===
+      let ws = null;
+      let candles = [];
+      let subscription_id = null;
+      let authorized = false;
+      let loginid = null;
+      let lastAutoTradeTs = 0;
+      const contracts = new Map();
+      const elAppId = document.getElementById("app_id");
+      const elToken = document.getElementById("token");
+      const elAuthStatus = document.getElementById("auth_status");
+      const elBalanceInfo = document.getElementById("balance_info");
+      const elSymbol = document.getElementById("symbol");
+      const elTf = document.getElementById("timeframe");
+      const elHistory = document.getElementById("history");
+      const elRsiP = document.getElementById("rsi_period");
+      const elMacdF = document.getElementById("macd_fast");
+      const elMacdS = document.getElementById("macd_slow");
+      const elMacdSig = document.getElementById("macd_signal");
+      const elEmaCrossFast = document.getElementById("ema_cross_fast");
+      const elEmaCrossSlow = document.getElementById("ema_cross_slow");
+      const elTrend = document.getElementById("trend_ema");
+      const elLast = document.getElementById("last_price");
+      const elRsiVal = document.getElementById("rsi_val");
+      const elMacdVals = document.getElementById("macd_vals");
+      const elEmaCrossVals = document.getElementById("ema_cross_vals");
+      const elTrendDir = document.getElementById("trend_dir");
+      const elSignal = document.getElementById("signal_badge");
+      const elPreview = document.getElementById("candles_preview");
+      const elAmount = document.getElementById("amount");
+      const elCurrency = document.getElementById("currency");
+      const elDuration = document.getElementById("duration");
+      const elDurUnit = document.getElementById("duration_unit");
+      const elStrategyType = document.getElementById("strategy_type");
+      const elOverUnderParams = document.getElementById("over_under_params");
+      const elDigitBarrier = document.getElementById("digit_barrier");
+      const elAuto = document.getElementById("auto_trade");
+      const elCooldown = document.getElementById("cooldown");
+      const tblContracts = document.getElementById("contracts_tbl");
+      const btnStart = document.getElementById("btn_start");
+      const btnStop = document.getElementById("btn_stop");
+      const btnForce = document.getElementById("btn_force");
+      const btnBuyRiseOver = document.getElementById("btn_buy_rise_over");
+      const btnBuyFallUnder = document.getElementById("btn_buy_fall_under");
+      const elModoTrade = document.getElementById("modo_trade");
+      const elModoActivo = document.getElementById("modo_activo");
+      const elScalpTP = document.getElementById("scalp_tp");
+      const elScalpSL = document.getElementById("scalp_sl");
+      const elScalpExitFrom = document.getElementById("scalp_exit_from");
+      const elScalpExitTo = document.getElementById("scalp_exit_to");
+      const btnSellManual = document.getElementById("btn_sell_manual");
+
+      // Estado y historial para scalping dinámico
+      const scalpingState = new Map();
+      const signalHistory = [];
+      let autoTradeCount = 0;
+
+      // === Funciones principales del Bot ===
+      function setText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      }
+
+      function updateAuthUI() {
+        const label = authorized
+          ? `Autorizado (${loginid || "—"})`
+          : "No autorizado";
+        setText("auth_status", label);
+      }
+
+      function stopWS() {
+        if (ws) {
+          log("Cerrando WebSocket…");
+          try {
+            ws.close();
+          } catch {}
+        }
+        ws = null;
+        subscription_id = null;
+        candles = [];
+        authorized = false;
+        loginid = null;
+        updateAuthUI();
+      }
+
+      function startWS() {
+        stopWS();
+        const appId = elAppId?.value?.trim() || "1089";
+        const url = `wss://ws.derivws.com/websockets/v3?app_id=${encodeURIComponent(
+          appId
+        )}`;
+        ws = new WebSocket(url);
+        log("WebSocket conectando...");
+
+        ws.onopen = () => {
+          log("WebSocket conectado.");
+          const token = elToken?.value?.trim();
+          if (!token) {
+            log("Token vacío. No se puede autorizar.");
+            stopWS();
+          } else {
+            ws.send(JSON.stringify({ authorize: token }));
+            log("Enviando authorize...");
+          }
+        };
+
+        ws.onmessage = (evt) => {
+          try {
+            handleMessage(JSON.parse(evt.data));
+          } catch (e) {
+            log("Excepción en onmessage: " + (e?.message || e));
+          }
+        };
+
+        ws.onclose = () => log("WebSocket cerrado.");
+        ws.onerror = () => log("WebSocket error.");
+      }
+
+      function handleMessage(data) {
+        if (data.error) {
+          log("Error: " + (data.error.message || JSON.stringify(data.error)));
+          return;
+        }
+
+        switch (data.msg_type) {
+          case "authorize": {
+            authorized = true;
+            loginid = data.authorize?.loginid || null;
+            updateAuthUI();
+            log(`Autorizado como ${loginid}`);
+            const accountType = data.authorize?.account_type || "—";
+            setText(
+              "account_type_info",
+              `Tipo de cuenta: ${accountType === "virtual" ? "Demo" : "Real"}`
+            );
+
+            ws.send(
+              JSON.stringify({ balance: 1, account: "current", subscribe: 1 })
+            );
+
+            subscribeCandles();
+            break;
+          }
+
+          case "balance": {
+            const b = data.balance;
+            setText(
+              "balance_info",
+              `Balance: ${b.currency} ${Number(b.balance).toFixed(2)}`
+            );
+            break;
+          }
+
+          case "candles": {
+            if (data.subscription) subscription_id = data.subscription.id;
+            if (Array.isArray(data.candles)) {
+              candles = data.candles.map((k) => ({
+                epoch: k.epoch,
+                open: +k.open,
+                high: +k.high,
+                low: +k.low,
+                close: +k.close,
+              }));
+              refreshPreview();
+              computeSignal(true);
+            }
+            break;
+          }
+
+          case "ohlc": {
+            const k = data.ohlc;
+            if (!k) break;
+            const item = {
+              epoch: k.epoch,
+              open: +k.open,
+              high: +k.high,
+              low: +k.low,
+              close: +k.close,
+            };
+            const idx = candles.findIndex((c) => c.epoch === k.epoch);
+            if (idx >= 0) candles[idx] = item;
+            else candles.push(item);
+            const max = Math.max(
+              50,
+              Math.min(1200, parseInt(elHistory?.value || "300", 10))
+            );
+            if (candles.length > max) candles = candles.slice(-max);
+            refreshPreview();
+            computeSignal(true);
+            break;
+          }
+
+          case "proposal": {
+            const p = data.proposal;
+            const price = Number(elAmount?.value || p.ask_price);
+            if (!isFinite(price) || price <= 0) {
+              log("Monto inválido. No se puede ejecutar la compra.");
+              return;
+            }
+            ws.send(JSON.stringify({ buy: p.id, price }));
+            log(`Enviando BUY con proposal_id=${p.id} y price=${price}`);
+            break;
+          }
+
+          case "buy": {
+            const buy = data.buy;
+            log(
+              `Compra OK: contract_id=${buy.contract_id}, trans=${buy.transaction_id}`
+            );
+            ws.send(
+              JSON.stringify({
+                proposal_open_contract: 1,
+                contract_id: buy.contract_id,
+                subscribe: 1,
+              })
+            );
+            ensureContractRow(
+              buy.contract_id,
+              buy.longcode,
+              buy.buy_price,
+              buy.contract_type
+            );
+            break;
+          }
+
+          case "proposal_open_contract": {
+            const poc = data.proposal_open_contract;
+            updateContractRow(poc);
+            if (poc.is_sold || poc.status === "won" || poc.status === "lost") {
+              updateSignalResult(poc.status);
+              log(`Contrato cerrado: ${poc.status} | P/L: ${poc.profit}`);
+              log(getSignalStats());
+            }
+            manageScalping(poc);
+            break;
+          }
+
+          default: {
+            log(`Mensaje no manejado: ${data.msg_type}`);
+            break;
+          }
+        }
+      }
+
+      function subscribeCandles() {
+        const symbol = elSymbol?.value || "R_100";
+        const gran = parseInt(elTf?.value || "60", 10);
+        const count = Math.max(
+          50,
+          Math.min(1200, parseInt(elHistory?.value || "300", 10))
+        );
+        const req = {
+          ticks_history: symbol,
+          style: "candles",
+          granularity: gran,
+          end: "latest",
+          count,
+          subscribe: 1,
+          adjust_start_time: 1,
+        };
+        ws.send(JSON.stringify(req));
+        log(`Suscribiendo velas: ${symbol} @ ${gran}s (${count})`);
+      }
+
+      // === Lógica de señales y scalping ===
+      function computeSignal(triggerAuto = false) {
+        if (!Array.isArray(candles) || candles.length < 50) {
+          setSignalUI("Neutral");
+          return { side: "Neutral" };
+        }
+
+        const closes = candles.map((c) => c.close);
+        const lastClose = closes.at(-1);
+
+        // RSI
+        const rsiP = +elRsiP?.value || 14;
+        const rsiArr = rsi(closes, rsiP);
+        const rsiLast = rsiArr.at(-1) ?? 50;
+
+        // MACD
+        const mf = +elMacdF?.value || 12;
+        const ms = +elMacdS?.value || 26;
+        const mSig = +elMacdSig?.value || 9;
+        const { macdLine, signal, hist } = macd(closes, mf, ms, mSig);
+        const macdLast = macdLine.at(-1) ?? 0;
+        const macdSigLast = signal.at(-1) ?? 0;
+        const histLast = hist.at(-1) ?? 0;
+
+        // Tendencia EMA
+        const trP = +elTrend?.value || 200;
+        const emaTrendArr = ema(closes, trP);
+        const emaTrend = emaTrendArr.at(-1) ?? lastClose;
+        const trendUp = lastClose > emaTrend;
+        const trendLabel = trendUp ? "Alcista" : "Bajista";
+
+        // Cruce de EMA
+        const emaCrossFastPeriod = +elEmaCrossFast?.value || 12;
+        const emaCrossSlowPeriod = +elEmaCrossSlow?.value || 26;
+        const emaFastArr = ema(closes, emaCrossFastPeriod);
+        const emaSlowArr = ema(closes, emaCrossSlowPeriod);
+        const emaFastCurrent = emaFastArr.at(-1);
+        const emaSlowCurrent = emaSlowArr.at(-1);
+        const emaFastPrevious = emaFastArr.at(-2);
+        const emaSlowPrevious = emaSlowArr.at(-2);
+        const isEmaCrossUp =
+          emaFastCurrent > emaSlowCurrent && emaFastPrevious <= emaSlowPrevious;
+        const isEmaCrossDown =
+          emaFastCurrent < emaSlowCurrent && emaFastPrevious >= emaSlowPrevious;
+
+        // Lógica de señal combinada
+        let side = "Neutral";
+        const strategyType = elStrategyType?.value;
+
+        if (strategyType === "rise_fall") {
+          const buyCond =
+            histLast > 0 && rsiLast > 50 && trendUp && isEmaCrossUp;
+          const sellCond =
+            histLast < 0 && rsiLast < 50 && !trendUp && isEmaCrossDown;
+          if (buyCond) side = "Compra";
+          else if (sellCond) side = "Venta";
+        } else if (strategyType === "over_under_digit") {
+          // Lógica para contratos de Último Dígito (ejemplo)
+          const digit = lastClose.toFixed(5).slice(-1);
+          const digitBarrier = +elDigitBarrier.value;
+          if (digit > digitBarrier) {
+            side = "Over";
+          } else if (digit < digitBarrier) {
+            side = "Under";
+          } else {
+            side = "Neutral";
+          }
+        }
+
+        // Actualizar UI
+        if (elLast)
+          elLast.textContent = isFinite(lastClose) ? lastClose.toFixed(5) : "—";
+        if (elRsiVal)
+          elRsiVal.textContent = isFinite(rsiLast) ? rsiLast.toFixed(2) : "—";
+        if (elMacdVals)
+          elMacdVals.textContent = [macdLast, macdSigLast, histLast]
+            .map((v) => (isFinite(v) ? v.toFixed(5) : "—"))
+            .join(" | ");
+        if (elEmaCrossVals) {
+          const crossStatus = isEmaCrossUp
+            ? "Cruce Alcista"
+            : isEmaCrossDown
+            ? "Cruce Bajista"
+            : "Neutral";
+          elEmaCrossVals.textContent = `${crossStatus} (${
+            isFinite(emaFastCurrent) ? emaFastCurrent.toFixed(5) : "—"
+          } / ${isFinite(emaSlowCurrent) ? emaSlowCurrent.toFixed(5) : "—"})`;
+        }
+        if (elTrendDir)
+          elTrendDir.textContent = `${trendLabel} (EMA${trP}=${
+            isFinite(emaTrend) ? emaTrend.toFixed(5) : "—"
+          })`;
+        setSignalUI(side);
+
+        const signalObj = {
+          timestamp: Date.now(),
+          symbol: elSymbol?.value || "R_100",
+          side,
+          rsi: rsiLast,
+          macd_hist: histLast,
+          trend: trendLabel,
+          result: null,
+        };
+        signalHistory.push(signalObj);
+
+        const modo = elModoTrade.value;
+        if (triggerAuto && elAuto?.checked && authorized && modo === "normal") {
+          const now = Math.floor(Date.now() / 1000);
+          const cd = Math.max(0, +elCooldown?.value || 0);
+          const maxOps =
+            parseInt(document.getElementById("max_auto_trades")?.value, 10) ||
+            10;
+          if (
+            now - lastAutoTradeTs >= cd &&
+            (side === "Compra" ||
+              side === "Venta" ||
+              side === "Over" ||
+              side === "Under") &&
+            autoTradeCount < maxOps
+          ) {
+            let type;
+            if (side === "Compra") type = "CALL";
+            else if (side === "Venta") type = "PUT";
+            else if (side === "Over") type = "DIGITOVER";
+            else if (side === "Under") type = "DIGITUNDER";
+            placeOrder(type);
+            lastAutoTradeTs = now;
+            autoTradeCount++;
+            log(`AutoTrade ejecutado #${autoTradeCount} (${type})`);
+          }
+        }
+      }
+
+      function setSignalUI(side) {
+        const badge = document.createElement("span");
+        badge.className =
+          "badge " +
+          (side === "Compra" || side === "Over"
+            ? "buy"
+            : side === "Venta" || side === "Under"
+            ? "sell"
+            : "neutral");
+        badge.textContent = side;
+        elSignal.innerHTML = "";
+        elSignal.appendChild(badge);
+      }
+
+      function refreshPreview() {
+        const last5 = candles.slice(-5).map((c) => ({
+          t: new Date(c.epoch * 1000)
+            .toISOString()
+            .slice(0, 19)
+            .replace("T", " "),
+          o: c.open,
+          h: c.high,
+          l: c.low,
+          c: c.close,
+        }));
+        elPreview.textContent = JSON.stringify(last5, null, 2);
+      }
+
+      function updateSignalResult(status) {
+        const lastSignal = signalHistory.at(-1);
+        if (lastSignal && (status === "won" || status === "lost")) {
+          lastSignal.result = status === "won" ? "acierto" : "fallo";
+          const statsEl = document.getElementById("signal_stats");
+          if (statsEl) statsEl.textContent = getSignalStats();
+        }
+      }
+
+      function getSignalStats() {
+        const total = signalHistory.filter((s) => s.result).length;
+        const aciertos = signalHistory.filter(
+          (s) => s.result === "acierto"
+        ).length;
+        const fallos = signalHistory.filter((s) => s.result === "fallo").length;
+        const winRate = total > 0 ? ((aciertos / total) * 100).toFixed(2) : "—";
+        const lossRate = total > 0 ? ((fallos / total) * 100).toFixed(2) : "—";
+        return `Señales: ${total} | ✅ Aciertos: ${aciertos} (${winRate}%) | ❌ Fallos: ${fallos} (${lossRate}%)`;
+      }
+
+      // === Órdenes y gestión de contratos ===
+      function placeOrder(contract_type) {
+        if (!ws || ws.readyState !== 1) {
+          log("WS no conectado.");
+          return;
+        }
+        if (!authorized) {
+          log("No autorizado. Provee token para operar.");
+          return;
+        }
+        const symbol = (elSymbol?.value || "").trim();
+        const amount = Number(elAmount?.value);
+        const currency = (elCurrency?.value || "USD").trim();
+        const duration = Number(elDuration?.value);
+        const duration_unit = (elDurUnit?.value || "m").trim();
+
+        if (elStrategyType.value === "over_under_digit") {
+          // Validar para contratos de dígito
+          if (duration_unit !== "t" || duration !== 1) {
+            log(
+              "Para contratos de Último Dígito, la duración debe ser 1 tick."
+            );
+            return;
+          }
+        }
+
+        if (
+          !symbol ||
+          !isFinite(amount) ||
+          amount <= 0 ||
+          !isFinite(duration) ||
+          duration <= 0
+        ) {
+          log("Parámetros de orden inválidos.");
+          return;
+        }
+
+        const proposalReq = {
+          proposal: 1,
+          amount,
+          basis: "stake",
+          contract_type,
+          currency,
+          duration,
+          duration_unit,
+          symbol,
+        };
+
+        // Agregar "barrier" para contratos de dígito
+        if (elStrategyType.value === "over_under_digit") {
+          const barrier = Number(elDigitBarrier?.value);
+          if (!isFinite(barrier) || barrier < 0 || barrier > 9) {
+            log(
+              "Por favor, ingresa una barrera válida (0-9) para el contrato de Último Dígito."
+            );
+            return;
+          }
+          proposalReq.barrier = barrier;
+        }
+
+        ws.send(JSON.stringify(proposalReq));
+        log(
+          `Solicitando propuesta ${contract_type} ${symbol} dur=${duration}${duration_unit} stake=${amount} ${currency}`
+        );
+      }
+
+      function ensureContractRow(
+        contract_id,
+        longcode,
+        buy_price,
+        contract_type
+      ) {
+        if (contracts.has(contract_id)) return;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="nowrap">${contract_id}</td><td>${
+          contract_type || "—"
+        }</td><td>${
+          elSymbol.value
+        }</td><td>—</td><td>—</td><td>—</td><td>Pendiente</td>`;
+        tblContracts.prepend(tr);
+        contracts.set(contract_id, { row: tr, longcode, buy_price });
+      }
+
+      function updateContractRow(poc) {
+        const id = poc.contract_id;
+        if (!contracts.has(id))
+          ensureContractRow(id, poc.longcode, poc.buy_price, poc.contract_type);
+        const rec = contracts.get(id);
+        const row = rec.row;
+        const tds = row.children;
+        const entry = poc.entry_spot ?? poc.entry_tick ?? "—";
+        const spot = poc.current_spot ?? poc.current_tick ?? "—";
+        const pl = isFinite(poc.profit) ? Number(poc.profit).toFixed(2) : "—";
+        const status = poc.is_sold
+          ? poc.status || "Cerrado"
+          : poc.is_expired
+          ? "Expirado"
+          : "Abierto";
+        tds[3].textContent = isFinite(entry) ? Number(entry).toFixed(5) : entry;
+        tds[4].textContent = isFinite(spot) ? Number(spot).toFixed(5) : spot;
+        tds[5].textContent = pl;
+        tds[6].textContent = status;
+        if (poc.is_sold) {
+          const won = poc.status === "won";
+          row.style.background = won ? "#e9fff2" : "#ffefef";
+        }
+      }
+
+      function sellContract(id, reason = "") {
+        if (!ws || scalpingState.get(id)?.sellRequested) return;
+        ws.send(JSON.stringify({ sell: id, price: 0 }));
+        scalpingState.set(id, { sellRequested: true });
+        log(`Sell enviado (${reason}) contract_id=${id}`);
+      }
+
+      function sellManual() {
+        const openContracts = Array.from(contracts.keys()).filter((id) => {
+          const row = contracts.get(id).row;
+          return row && row.children[6].textContent === "Abierto";
+        });
+        if (openContracts.length === 0) {
+          log("No hay contratos abiertos para vender.");
+          return;
+        }
+        const contractToSell = openContracts[0];
+        sellContract(contractToSell, "Venta manual");
+      }
+
+      function manageScalping(poc) {
+        if (elModoTrade?.value !== "scalping" || poc.is_sold) return;
+        const tp = Number(elScalpTP?.value ?? 0.25);
+        const sl = Number(elScalpSL?.value ?? -0.2);
+        const from = Number(elScalpExitFrom?.value ?? 40);
+        const to = Number(elScalpExitTo?.value ?? 30);
+        const profit = Number(poc.profit ?? 0);
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = (poc.date_expiry || 0) - now;
+
+        if (poc.is_sold || poc.is_expired) {
+          scalpingState.delete(poc.contract_id);
+          return;
+        }
+
+        const st = scalpingState.get(poc.contract_id) || {
+          tpArmed: false,
+          trendAtArm: null,
+          tpArmedProfit: null,
+          highestProfit: profit,
+        };
+
+        if (!st.hasOwnProperty("start_time")) {
+          st.start_time = poc.date_start;
+        }
+
+        // === Periodo de gracia inicial (5 segundos) ===
+        // No se ejecuta ninguna lógica de scalping en los primeros segundos
+        if (now - st.start_time < 5) {
+          scalpingState.set(poc.contract_id, st);
+          return;
+        }
+
+        st.highestProfit = Math.max(st.highestProfit, profit);
+
+        const closes = candles.map((c) => c.close);
+        const emaTrend = ema(closes, 200).at(-1);
+        const trendNow = closes.at(-1) > emaTrend;
+
+        // 1. Vender si alcanza el stop loss
+        if (profit <= sl) {
+          return sellContract(poc.contract_id, `SL ${sl}`);
+        }
+
+        // 2. Activar el take profit dinámico y trailing stop
+        if (
+          poc.contract_type !== "DIGITOVER" &&
+          poc.contract_type !== "DIGITUNDER" &&
+          !st.tpArmed &&
+          profit >= tp
+        ) {
+          st.tpArmed = true;
+          st.trendAtArm = trendNow;
+          st.tpArmedProfit = profit;
+          scalpingState.set(poc.contract_id, st);
+          log(`TP de scalping armado para ${poc.contract_id}.`);
+          return;
+        }
+
+        // 3. Vender si el beneficio retrocede desde su punto más alto (Trailing Stop Loss)
+        if (st.tpArmed && profit < st.highestProfit - 0.1) {
+          return sellContract(
+            poc.contract_id,
+            "Retroceso de precio significativo"
+          );
+        }
+
+        // 4. Vender si la tendencia cambia (solo para Rise/Fall)
+        if (
+          poc.contract_type !== "DIGITOVER" &&
+          poc.contract_type !== "DIGITUNDER" &&
+          st.tpArmed &&
+          trendNow !== st.trendAtArm
+        ) {
+          return sellContract(poc.contract_id, "Cambio de tendencia");
+        }
+
+        // 5. Cierre anticipado por tiempo (si el beneficio es positivo)
+        if (remaining <= from && remaining >= to && profit > 0) {
+          return sellContract(
+            poc.contract_id,
+            `Cierre anticipado (${from}-${to}s)`
+          );
+        }
+
+        scalpingState.set(poc.contract_id, st);
+      }
+
+      // === Eventos UI y inicialización ===
+      btnStart.addEventListener("click", startWS);
+      btnStop.addEventListener("click", stopWS);
+      btnForce.addEventListener("click", () => computeSignal(false));
+      btnBuyRiseOver.addEventListener("click", () => {
+        const strategyType = elStrategyType.value;
+        let contractType;
+        if (strategyType === "rise_fall") {
+          contractType = "CALL";
+        } else if (strategyType === "over_under_digit") {
+          contractType = "DIGITOVER";
+        }
+        placeOrder(contractType);
+      });
+      btnBuyFallUnder.addEventListener("click", () => {
+        const strategyType = elStrategyType.value;
+        let contractType;
+        if (strategyType === "rise_fall") {
+          contractType = "PUT";
+        } else if (strategyType === "over_under_digit") {
+          contractType = "DIGITUNDER";
+        }
+        placeOrder(contractType);
+      });
+      btnSellManual.addEventListener("click", sellManual);
+
+      elStrategyType.addEventListener("change", (e) => {
+        const strategy = e.target.value;
+        if (strategy === "over_under_digit") {
+          elOverUnderParams.classList.remove("hidden");
+          btnBuyRiseOver.textContent = "Comprar Over";
+          btnBuyFallUnder.textContent = "Comprar Under";
+          elDurUnit.value = "t";
+          elDuration.value = 1;
+        } else {
+          elOverUnderParams.classList.add("hidden");
+          btnBuyRiseOver.textContent = "Comprar Rise";
+          btnBuyFallUnder.textContent = "Comprar Fall";
+          elDurUnit.value = "m";
+          elDuration.value = 3;
+        }
+      });
+
+      elSymbol.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+      elTf.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+      elHistory.addEventListener("change", () => {
+        if (ws) startWS();
+      });
+      elModoTrade.addEventListener("change", () => {
+        const modo = elModoTrade?.value || "normal";
+        elModoActivo.textContent =
+          modo === "scalping" ? "Scalping dinámico" : "Trading por señales";
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        log("1) Pega tu token. 2) Inicia el bot.");
+        log("3) Ajusta la estrategia. 4) Activa el modo automático.");
+        elStrategyType.dispatchEvent(new Event("change"));
+      });
+    </script>
+  </body>
+</html>
