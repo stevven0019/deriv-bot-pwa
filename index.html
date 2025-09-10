@@ -57,14 +57,16 @@
       .nowrap {
         white-space: nowrap;
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <main class="container">
-      <h2>Deriv Trading — Señales + Ejecución (MACD + RSI + Tendencia)</h2>
+      <h2>Deriv Trading — Señales + Ejecución</h2>
       <p class="muted">
-        Velas en tiempo real, señales combinadas y ejecución CALL/PUT por
-        WebSocket Deriv.
+        Velas en tiempo real, señales combinadas y ejecución de contratos.
       </p>
 
       <article>
@@ -180,8 +182,9 @@
                   min="2"
                   max="100"
                   value="9"
-                /></div
-            ></label>
+                />
+              </div>
+            </label>
           </div>
           <div>
             <label
@@ -192,6 +195,15 @@
                 max="500"
                 value="200"
             /></label>
+          </div>
+          <div>
+            <label
+              >EMA Cruce (rápida / lenta)
+              <div class="grid g2">
+                <input id="ema_cross_fast" type="number" min="2" value="12" />
+                <input id="ema_cross_slow" type="number" min="3" value="26" />
+              </div>
+            </label>
           </div>
         </div>
         <div>
@@ -215,7 +227,11 @@
             <div id="macd_vals">—</div>
           </div>
         </div>
-        <div class="grid g2" style="margin-top: 0.75rem">
+        <div class="grid g3" style="margin-top: 0.75rem">
+          <div>
+            <strong>EMA Cruce (rápida / lenta):</strong>
+            <div id="ema_cross_vals">—</div>
+          </div>
           <div>
             <strong>Tendencia EMA:</strong>
             <div id="trend_dir">—</div>
@@ -263,23 +279,50 @@
                   <option value="s">seg</option>
                   <option value="m" selected>min</option>
                 </select>
-                <select id="contract_type">
-                  <option value="CALL">CALL (Rise)</option>
-                  <option value="PUT">PUT (Fall)</option>
-                </select>
-              </div></label
-            >
+              </div>
+            </label>
           </div>
         </div>
+
         <div class="grid g3">
-          <button id="btn_call" class="primary">Comprar CALL</button>
-          <button id="btn_put" class="secondary">Comprar PUT</button>
+          <div>
+            <label>Tipo de Contrato</label>
+            <select id="strategy_type">
+              <option value="rise_fall" selected>Rise/Fall</option>
+              <option value="over_under_digit">
+                Over/Under (Último Dígito)
+              </option>
+            </select>
+          </div>
+          <div id="over_under_params" class="hidden">
+            <label>Barrera (Dígito 0-9)</label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              max="9"
+              id="digit_barrier"
+              placeholder="Dígito para Over/Under"
+            />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="grid g2">
+              <button id="btn_buy_rise_over" class="primary">
+                Comprar Rise
+              </button>
+              <button id="btn_buy_fall_under" class="secondary">
+                Comprar Fall
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g3" style="margin-top: 1rem">
           <label
             ><input type="checkbox" id="auto_trade" /> Auto ejecutar según
             señal</label
           >
-        </div>
-        <div class="grid g3">
           <div>
             <label
               >Cooldown auto-trade (seg)<input
@@ -353,8 +396,8 @@
                 <input id="scalp_exit_from" type="number" min="1" value="40" />
                 <input id="scalp_exit_to" type="number" min="1" value="30" />
                 <span style="align-self: center">seg</span>
-              </div></label
-            >
+              </div>
+            </label>
           </div>
         </div>
       </article>
@@ -477,10 +520,13 @@
       const elMacdF = document.getElementById("macd_fast");
       const elMacdS = document.getElementById("macd_slow");
       const elMacdSig = document.getElementById("macd_signal");
+      const elEmaCrossFast = document.getElementById("ema_cross_fast");
+      const elEmaCrossSlow = document.getElementById("ema_cross_slow");
       const elTrend = document.getElementById("trend_ema");
       const elLast = document.getElementById("last_price");
       const elRsiVal = document.getElementById("rsi_val");
       const elMacdVals = document.getElementById("macd_vals");
+      const elEmaCrossVals = document.getElementById("ema_cross_vals");
       const elTrendDir = document.getElementById("trend_dir");
       const elSignal = document.getElementById("signal_badge");
       const elPreview = document.getElementById("candles_preview");
@@ -488,15 +534,17 @@
       const elCurrency = document.getElementById("currency");
       const elDuration = document.getElementById("duration");
       const elDurUnit = document.getElementById("duration_unit");
-      const elCtype = document.getElementById("contract_type");
+      const elStrategyType = document.getElementById("strategy_type");
+      const elOverUnderParams = document.getElementById("over_under_params");
+      const elDigitBarrier = document.getElementById("digit_barrier");
       const elAuto = document.getElementById("auto_trade");
       const elCooldown = document.getElementById("cooldown");
       const tblContracts = document.getElementById("contracts_tbl");
       const btnStart = document.getElementById("btn_start");
       const btnStop = document.getElementById("btn_stop");
       const btnForce = document.getElementById("btn_force");
-      const btnCall = document.getElementById("btn_call");
-      const btnPut = document.getElementById("btn_put");
+      const btnBuyRiseOver = document.getElementById("btn_buy_rise_over");
+      const btnBuyFallUnder = document.getElementById("btn_buy_fall_under");
       const elModoTrade = document.getElementById("modo_trade");
       const elModoActivo = document.getElementById("modo_activo");
       const elScalpTP = document.getElementById("scalp_tp");
@@ -726,9 +774,13 @@
 
         const closes = candles.map((c) => c.close);
         const lastClose = closes.at(-1);
+
+        // RSI
         const rsiP = +elRsiP?.value || 14;
         const rsiArr = rsi(closes, rsiP);
         const rsiLast = rsiArr.at(-1) ?? 50;
+
+        // MACD
         const mf = +elMacdF?.value || 12;
         const ms = +elMacdS?.value || 26;
         const mSig = +elMacdSig?.value || 9;
@@ -736,17 +788,53 @@
         const macdLast = macdLine.at(-1) ?? 0;
         const macdSigLast = signal.at(-1) ?? 0;
         const histLast = hist.at(-1) ?? 0;
+
+        // Tendencia EMA
         const trP = +elTrend?.value || 200;
         const emaTrendArr = ema(closes, trP);
         const emaTrend = emaTrendArr.at(-1) ?? lastClose;
         const trendUp = lastClose > emaTrend;
         const trendLabel = trendUp ? "Alcista" : "Bajista";
-        const buyCond = histLast > 0 && rsiLast > 50 && trendUp;
-        const sellCond = histLast < 0 && rsiLast < 50 && !trendUp;
-        let side = "Neutral";
-        if (buyCond) side = "Compra";
-        else if (sellCond) side = "Venta";
 
+        // Cruce de EMA
+        const emaCrossFastPeriod = +elEmaCrossFast?.value || 12;
+        const emaCrossSlowPeriod = +elEmaCrossSlow?.value || 26;
+        const emaFastArr = ema(closes, emaCrossFastPeriod);
+        const emaSlowArr = ema(closes, emaCrossSlowPeriod);
+        const emaFastCurrent = emaFastArr.at(-1);
+        const emaSlowCurrent = emaSlowArr.at(-1);
+        const emaFastPrevious = emaFastArr.at(-2);
+        const emaSlowPrevious = emaSlowArr.at(-2);
+        const isEmaCrossUp =
+          emaFastCurrent > emaSlowCurrent && emaFastPrevious <= emaSlowPrevious;
+        const isEmaCrossDown =
+          emaFastCurrent < emaSlowCurrent && emaFastPrevious >= emaSlowPrevious;
+
+        // Lógica de señal combinada
+        let side = "Neutral";
+        const strategyType = elStrategyType?.value;
+
+        if (strategyType === "rise_fall") {
+          const buyCond =
+            histLast > 0 && rsiLast > 50 && trendUp && isEmaCrossUp;
+          const sellCond =
+            histLast < 0 && rsiLast < 50 && !trendUp && isEmaCrossDown;
+          if (buyCond) side = "Compra";
+          else if (sellCond) side = "Venta";
+        } else if (strategyType === "over_under_digit") {
+          // Lógica para contratos de Último Dígito (ejemplo)
+          const digit = lastClose.toFixed(5).slice(-1);
+          const digitBarrier = +elDigitBarrier.value;
+          if (digit > digitBarrier) {
+            side = "Over";
+          } else if (digit < digitBarrier) {
+            side = "Under";
+          } else {
+            side = "Neutral";
+          }
+        }
+
+        // Actualizar UI
         if (elLast)
           elLast.textContent = isFinite(lastClose) ? lastClose.toFixed(5) : "—";
         if (elRsiVal)
@@ -755,6 +843,16 @@
           elMacdVals.textContent = [macdLast, macdSigLast, histLast]
             .map((v) => (isFinite(v) ? v.toFixed(5) : "—"))
             .join(" | ");
+        if (elEmaCrossVals) {
+          const crossStatus = isEmaCrossUp
+            ? "Cruce Alcista"
+            : isEmaCrossDown
+            ? "Cruce Bajista"
+            : "Neutral";
+          elEmaCrossVals.textContent = `${crossStatus} (${
+            isFinite(emaFastCurrent) ? emaFastCurrent.toFixed(5) : "—"
+          } / ${isFinite(emaSlowCurrent) ? emaSlowCurrent.toFixed(5) : "—"})`;
+        }
         if (elTrendDir)
           elTrendDir.textContent = `${trendLabel} (EMA${trP}=${
             isFinite(emaTrend) ? emaTrend.toFixed(5) : "—"
@@ -781,10 +879,17 @@
             10;
           if (
             now - lastAutoTradeTs >= cd &&
-            (side === "Compra" || side === "Venta") &&
+            (side === "Compra" ||
+              side === "Venta" ||
+              side === "Over" ||
+              side === "Under") &&
             autoTradeCount < maxOps
           ) {
-            const type = side === "Compra" ? "CALL" : "PUT";
+            let type;
+            if (side === "Compra") type = "CALL";
+            else if (side === "Venta") type = "PUT";
+            else if (side === "Over") type = "DIGITOVER";
+            else if (side === "Under") type = "DIGITUNDER";
             placeOrder(type);
             lastAutoTradeTs = now;
             autoTradeCount++;
@@ -797,7 +902,11 @@
         const badge = document.createElement("span");
         badge.className =
           "badge " +
-          (side === "Compra" ? "buy" : side === "Venta" ? "sell" : "neutral");
+          (side === "Compra" || side === "Over"
+            ? "buy"
+            : side === "Venta" || side === "Under"
+            ? "sell"
+            : "neutral");
         badge.textContent = side;
         elSignal.innerHTML = "";
         elSignal.appendChild(badge);
@@ -852,6 +961,17 @@
         const currency = (elCurrency?.value || "USD").trim();
         const duration = Number(elDuration?.value);
         const duration_unit = (elDurUnit?.value || "m").trim();
+
+        if (elStrategyType.value === "over_under_digit") {
+          // Validar para contratos de dígito
+          if (duration_unit !== "t" || duration !== 1) {
+            log(
+              "Para contratos de Último Dígito, la duración debe ser 1 tick."
+            );
+            return;
+          }
+        }
+
         if (
           !symbol ||
           !isFinite(amount) ||
@@ -862,6 +982,7 @@
           log("Parámetros de orden inválidos.");
           return;
         }
+
         const proposalReq = {
           proposal: 1,
           amount,
@@ -872,6 +993,19 @@
           duration_unit,
           symbol,
         };
+
+        // Agregar "barrier" para contratos de dígito
+        if (elStrategyType.value === "over_under_digit") {
+          const barrier = Number(elDigitBarrier?.value);
+          if (!isFinite(barrier) || barrier < 0 || barrier > 9) {
+            log(
+              "Por favor, ingresa una barrera válida (0-9) para el contrato de Último Dígito."
+            );
+            return;
+          }
+          proposalReq.barrier = barrier;
+        }
+
         ws.send(JSON.stringify(proposalReq));
         log(
           `Solicitando propuesta ${contract_type} ${symbol} dur=${duration}${duration_unit} stake=${amount} ${currency}`
@@ -985,7 +1119,12 @@
         }
 
         // 2. Activar el take profit dinámico y trailing stop
-        if (!st.tpArmed && profit >= tp) {
+        if (
+          poc.contract_type !== "DIGITOVER" &&
+          poc.contract_type !== "DIGITUNDER" &&
+          !st.tpArmed &&
+          profit >= tp
+        ) {
           st.tpArmed = true;
           st.trendAtArm = trendNow;
           st.tpArmedProfit = profit;
@@ -1002,8 +1141,13 @@
           );
         }
 
-        // 4. Vender si la tendencia cambia
-        if (st.tpArmed && trendNow !== st.trendAtArm) {
+        // 4. Vender si la tendencia cambia (solo para Rise/Fall)
+        if (
+          poc.contract_type !== "DIGITOVER" &&
+          poc.contract_type !== "DIGITUNDER" &&
+          st.tpArmed &&
+          trendNow !== st.trendAtArm
+        ) {
           return sellContract(poc.contract_id, "Cambio de tendencia");
         }
 
@@ -1022,9 +1166,44 @@
       btnStart.addEventListener("click", startWS);
       btnStop.addEventListener("click", stopWS);
       btnForce.addEventListener("click", () => computeSignal(false));
-      btnCall.addEventListener("click", () => placeOrder("CALL"));
-      btnPut.addEventListener("click", () => placeOrder("PUT"));
+      btnBuyRiseOver.addEventListener("click", () => {
+        const strategyType = elStrategyType.value;
+        let contractType;
+        if (strategyType === "rise_fall") {
+          contractType = "CALL";
+        } else if (strategyType === "over_under_digit") {
+          contractType = "DIGITOVER";
+        }
+        placeOrder(contractType);
+      });
+      btnBuyFallUnder.addEventListener("click", () => {
+        const strategyType = elStrategyType.value;
+        let contractType;
+        if (strategyType === "rise_fall") {
+          contractType = "PUT";
+        } else if (strategyType === "over_under_digit") {
+          contractType = "DIGITUNDER";
+        }
+        placeOrder(contractType);
+      });
       btnSellManual.addEventListener("click", sellManual);
+
+      elStrategyType.addEventListener("change", (e) => {
+        const strategy = e.target.value;
+        if (strategy === "over_under_digit") {
+          elOverUnderParams.classList.remove("hidden");
+          btnBuyRiseOver.textContent = "Comprar Over";
+          btnBuyFallUnder.textContent = "Comprar Under";
+          elDurUnit.value = "t";
+          elDuration.value = 1;
+        } else {
+          elOverUnderParams.classList.add("hidden");
+          btnBuyRiseOver.textContent = "Comprar Rise";
+          btnBuyFallUnder.textContent = "Comprar Fall";
+          elDurUnit.value = "m";
+          elDuration.value = 3;
+        }
+      });
 
       elSymbol.addEventListener("change", () => {
         if (ws) startWS();
@@ -1035,7 +1214,6 @@
       elHistory.addEventListener("change", () => {
         if (ws) startWS();
       });
-
       elModoTrade.addEventListener("change", () => {
         const modo = elModoTrade?.value || "normal";
         elModoActivo.textContent =
@@ -1045,6 +1223,7 @@
       document.addEventListener("DOMContentLoaded", () => {
         log("1) Pega tu token. 2) Inicia el bot.");
         log("3) Ajusta la estrategia. 4) Activa el modo automático.");
+        elStrategyType.dispatchEvent(new Event("change"));
       });
     </script>
   </body>
